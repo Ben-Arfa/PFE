@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "622495011859",
+    "project_id": "kiwo-e0aae",
+    "storage_bucket": "kiwo-e0aae.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:622495011859:android:a50aec6ef7cb4a9019dbe6",
+        "android_client_info": {
+          "package_name": "com.example.kiwo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAzHr9gEsJGsfm_q0dJW1MKDzZiCwhT8GU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
