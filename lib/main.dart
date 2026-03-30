@@ -1,30 +1,16 @@
-import 'package:flutter/material.dart';
+// lib/main.dart
+
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart'; // Généré par : flutterfire configure
-import 'widgets/auth_wrapper.dart';
+import 'package:flutter/material.dart';
+import 'firebase_options.dart';
+import 'core/theme_provider.dart';
+import 'app.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await ThemeProvider.instance.init(); // ← charge la préférence sauvegardée
+
   runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Auth',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6C63FF),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
-      home: const AuthWrapper(),
-    );
-  }
 }

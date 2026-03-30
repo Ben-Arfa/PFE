@@ -9,54 +9,12 @@ class AuthService {
   // ── Stream utilisateur ───────────────────────────────────────────
   Stream<User?> get userStream => _auth.authStateChanges();
 
-  // ── Connexion ────────────────────────────────────────────────────
-  Future<void> signIn({
-    required String firstName,
-    required String lastName,
-    required String email,
-    required String password,
-  }) async {
-    UserCredential credential;
+  // ── Connexion (email + mot de passe uniquement) ──────────────────
+  Future<void> signIn({required String email, required String password}) async {
     try {
-      credential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
     } on FirebaseAuthException catch (e) {
       throw _mapAuthError(e);
-    }
-
-    // Vérification des noms en Firestore
-    final uid = credential.user!.uid;
-    final snap = await _firestore.collection('users').doc(uid).get();
-
-    if (snap.exists) {
-      final data = snap.data()!;
-      final storedFirst = (data['firstName'] ?? '')
-          .toString()
-          .trim()
-          .toLowerCase();
-      final storedLast = (data['lastName'] ?? '')
-          .toString()
-          .trim()
-          .toLowerCase();
-      final enteredFirst = firstName.trim().toLowerCase();
-      final enteredLast = lastName.trim().toLowerCase();
-
-      if (storedLast.isNotEmpty && storedLast != enteredLast) {
-        await _auth.signOut();
-        throw AuthException(
-          'Le nom ne correspond pas à celui enregistré.',
-          field: 'name',
-        );
-      }
-      if (storedFirst.isNotEmpty && storedFirst != enteredFirst) {
-        await _auth.signOut();
-        throw AuthException(
-          'Le prénom ne correspond pas à celui enregistré.',
-          field: 'name',
-        );
-      }
     }
   }
 
@@ -94,7 +52,7 @@ class AuthService {
     return snap.data();
   }
 
-  // ── Réinitialisation mot de passe ───────────────────────────────
+  // ── Réinitialisation mot de passe ────────────────────────────────
   Future<void> sendPasswordReset({required String email}) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
@@ -124,7 +82,6 @@ class AuthService {
     final user = _auth.currentUser;
     if (user == null) throw AuthException('Utilisateur non connecté.');
 
-    // Ré-authentification requise par Firebase avant changement email
     try {
       final cred = EmailAuthProvider.credential(
         email: user.email!,
@@ -132,8 +89,6 @@ class AuthService {
       );
       await user.reauthenticateWithCredential(cred);
       await user.verifyBeforeUpdateEmail(newEmail);
-
-      // Met à jour aussi dans Firestore
       await _firestore.collection('users').doc(user.uid).update({
         'email': newEmail,
       });
@@ -151,7 +106,6 @@ class AuthService {
     if (user == null) throw AuthException('Utilisateur non connecté.');
 
     try {
-      // Ré-authentification requise par Firebase
       final cred = EmailAuthProvider.credential(
         email: user.email!,
         password: currentPassword,
@@ -167,17 +121,21 @@ class AuthService {
   AuthException _mapAuthError(FirebaseAuthException e) {
     switch (e.code) {
       case 'user-not-found':
-      case 'invalid-email':
-      case 'invalid-credential':
         return AuthException(
           'Aucun compte trouvé pour cet email.',
           field: 'email',
         );
-      case 'email-already-in-use':
-        return AuthException('Cet email est déjà utilisé.', field: 'email');
+      case 'invalid-email':
+        return AuthException('Adresse email invalide.', field: 'email');
       case 'wrong-password':
       case 'invalid-password':
-        return AuthException('Mot de passe incorrect.', field: 'password');
+      case 'invalid-credential':
+        return AuthException(
+          'Email ou mot de passe incorrect.',
+          field: 'password',
+        );
+      case 'email-already-in-use':
+        return AuthException('Cet email est déjà utilisé.', field: 'email');
       case 'weak-password':
         return AuthException(
           'Mot de passe trop faible. Minimum 6 caractères.',
