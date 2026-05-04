@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function userProfileCreateIsValid() {
+      return request.resource.data.keys().hasOnly([
+          'firstName',
+          'lastName',
+          'email',
+          'role',
+          'createdAt',
+          'createdBy'
+        ]) &&
+        request.resource.data.email is string &&
+        request.resource.data.role == 'user';
+    }
+
+    function userProfileUpdateIsValidForOwner() {
+      return request.resource.data.role == resource.data.role;
+    }
+
+    // Profile utilisateur: admin lit/edite tous les profils,
+    // utilisateur lit/edite uniquement son profil.
+    match /users/{userId} {
+      allow create: if isAdmin() || (isOwner(userId) && userProfileCreateIsValid());
+      allow read: if isAdmin() || isOwner(userId);
+      allow update: if isAdmin() || (isOwner(userId) && userProfileUpdateIsValidForOwner());
+      allow delete: if isAdmin();
+    }
+
+    // Configuration de ferme: acces admin ou proprietaire.
+    match /users/{userId}/config/{docId} {
+      allow read, write: if isAdmin() || isOwner(userId);
+    }
+
+    // Gestion de l'elevage: referentiels eleveur.
+    match /users/{userId}/poultryTypes/{typeId} {
+      allow read, write: if isAdmin() || isOwner(userId);
+    }
+
+    match /users/{userId}/buildings/{buildingId} {
+      allow read, write: if isAdmin() || isOwner(userId);
+    }
+
+    match /users/{userId}/lots/{lotId} {
+      allow read, write: if isAdmin() || isOwner(userId);
+    }
+
+    match /users/{userId}/lots/{lotId}/dailyEntries/{entryId} {
+      allow read, write: if isAdmin() || isOwner(userId);
+    }
+
+    match /users/{userId}/lots/{lotId}/vaccinationPlans/{planId} {
+      allow read, write: if isAdmin() || isOwner(userId);
+    }
+
+    match /users/{userId}/lots/{lotId}/historyEvents/{eventId} {
+      allow read, write: if isAdmin() || isOwner(userId);
+    }
+
+    match /users/{userId}/lots/{lotId}/journal/{entryId} {
+      allow read, write: if isAdmin() || isOwner(userId);
+    }
+
+    // Suivi: acces admin ou proprietaire.
+    match /users/{userId}/tracking/{entryId} {
+      allow read, write: if isAdmin() || isOwner(userId);
+    }
+
+    // Automatisation IoT appliquee aux batiments ou lots.
+    match /users/{userId}/iotAutomations/{automationId} {
+      allow read, write: if isAdmin() || isOwner(userId);
+    }
+  }
+}

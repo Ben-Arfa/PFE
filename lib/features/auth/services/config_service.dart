@@ -1,15 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-/// Service qui persiste la configuration de l'élevage dans Firestore.
-/// Chaque utilisateur a son propre document : users/{uid}/config/farm
 class ConfigService {
   final _firestore = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
 
   String? get _uid => _auth.currentUser?.uid;
 
-  DocumentReference? get _configDoc {
+  DocumentReference<Map<String, dynamic>>? get _configDoc {
     final uid = _uid;
     if (uid == null) return null;
     return _firestore
@@ -19,26 +17,36 @@ class ConfigService {
         .doc('farm');
   }
 
-  // ── Sauvegarde ────────────────────────────────────────────────
   Future<void> saveConfig(Map<String, dynamic> config) async {
     final doc = _configDoc;
     if (doc == null) return;
-    await doc.set(config, SetOptions(merge: true));
+    try {
+      await doc.set(config, SetOptions(merge: true));
+    } on FirebaseException catch (e) {
+      if (e.code != 'permission-denied') rethrow;
+    }
   }
 
-  // ── Lecture ───────────────────────────────────────────────────
   Future<Map<String, dynamic>?> loadConfig() async {
     final doc = _configDoc;
     if (doc == null) return null;
-    final snap = await doc.get();
-    if (!snap.exists) return null;
-    return snap.data() as Map<String, dynamic>?;
+    try {
+      final snap = await doc.get();
+      if (!snap.exists) return null;
+      return snap.data();
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') return null;
+      rethrow;
+    }
   }
 
-  // ── Suppression (reset) ───────────────────────────────────────
   Future<void> clearConfig() async {
     final doc = _configDoc;
     if (doc == null) return;
-    await doc.delete();
+    try {
+      await doc.delete();
+    } on FirebaseException catch (e) {
+      if (e.code != 'permission-denied') rethrow;
+    }
   }
 }
