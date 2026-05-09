@@ -19,6 +19,8 @@ import 'package:kiwo/features/suivi_des_vaccinations/data/services/vaccination_s
 import 'package:kiwo/features/suivi_des_vaccinations/domain/entities/vaccination_plan.dart';
 import 'package:kiwo/features/suivi_des_vaccinations/domain/repositories/vaccination_repository.dart';
 import 'package:kiwo/shared/presentation/theme/app_colors.dart';
+import 'package:kiwo/features/home/presentation/screens/notifications_screen.dart';
+import 'package:kiwo/features/home/presentation/screens/alerts_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -28,11 +30,6 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  late final FarmManagementUseCases _farmUseCases = FarmManagementUseCases();
-  late final BuildingRepositoryImpl _buildingRepository =
-      BuildingRepositoryImpl(BuildingService());
-  late final VaccinationRepository _vaccinationRepository =
-      VaccinationRepositoryImpl(VaccinationService());
   late final ProfileRepositoryImpl _profileRepository = ProfileRepositoryImpl(
     ProfileService(),
   );
@@ -48,50 +45,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _WelcomeHeader(profileRepository: _profileRepository, theme: theme),
-            const SizedBox(height: 22),
-            _SectionHeader(
-              title: 'Bilan général',
-              subtitle: 'Bâtiments, lots et types présents',
-              theme: theme,
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationsScreen(),
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.headerColor,
+                      foregroundColor: theme.textColor,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.notifications_outlined),
+                        SizedBox(width: 8),
+                        Text('Notifications'),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const AlertsScreen()),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.headerColor,
+                      foregroundColor: theme.textColor,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.warning_amber_outlined),
+                        SizedBox(width: 8),
+                        Text('Alertes'),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            _BalanceOverview(
-              buildingRepository: _buildingRepository,
-              farmUseCases: _farmUseCases,
-              theme: theme,
-            ),
-            const SizedBox(height: 22),
-            _SectionHeader(
-              title: 'Taux de mortalité par lot',
-              subtitle: 'Une courbe par lot actif',
-              theme: theme,
-            ),
-            const SizedBox(height: 12),
-            _MortalityOverview(farmUseCases: _farmUseCases, theme: theme),
-            const SizedBox(height: 22),
-            _SectionHeader(
-              title: 'État de l\'environnement',
-              subtitle: 'Paramètres et état de chaque bâtiment',
-              theme: theme,
-            ),
-            const SizedBox(height: 12),
-            _EnvironmentOverview(
-              buildingRepository: _buildingRepository,
-              farmUseCases: _farmUseCases,
-              theme: theme,
-            ),
-            const SizedBox(height: 22),
-            _SectionHeader(
-              title: 'Vaccinations à venir',
-              subtitle: 'Les prochaines vaccinations par lot',
-              theme: theme,
-            ),
-            const SizedBox(height: 12),
-            _VaccinationOverview(
-              repository: _vaccinationRepository,
-              theme: theme,
-            ),
-            const SizedBox(height: 8),
           ],
         ),
       ),
