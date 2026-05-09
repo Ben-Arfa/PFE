@@ -88,97 +88,184 @@ class _DailyEntryFormScreenState extends State<DailyEntryFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nouvelle saisie')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              ListTile(
-                title: Text(
-                  'Date: ${_date.toIso8601String().split('T').first}',
-                ),
-                trailing: TextButton(
-                  onPressed: _pickDate,
-                  child: const Text('Changer'),
-                ),
-              ),
-              TextFormField(
-                controller: _deathsCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre de morts aujourd\'hui',
-                ),
-                validator: (v) => (int.tryParse(v ?? '') == null)
-                    ? 'Entrez un nombre valide'
-                    : null,
-              ),
-              if (_isLayer)
-                TextFormField(
-                  controller: _eggsCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Nombre d\'œufs produits',
+      floatingActionButton: FloatingActionButton(
+        onPressed: _submit,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: const Icon(Icons.check, color: Colors.black87),
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Hero header matching TypesScreen
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Container(
+                height: 130,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF5DB83D), Color(0xFF8FD14E)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  validator: (v) => (int.tryParse(v ?? '') == null)
-                      ? 'Entrez un nombre valide'
-                      : null,
-                )
-              else
-                TextFormField(
-                  controller: _weightCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF5DB83D).withValues(alpha: 0.25),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.edit_calendar_rounded,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Saisie — ${widget.lot.identifier}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '${widget.lot.poultryTypeName} · ${widget.lot.buildingName}',
+                                style: const TextStyle(color: Colors.white70),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Expanded(
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
-                  decoration: const InputDecoration(
-                    labelText: 'Poids moyen (kg)',
-                  ),
-                  validator: (v) =>
-                      (v != null && v.isNotEmpty && double.tryParse(v) == null)
-                      ? 'Entrez un poids valide'
-                      : null,
+                  children: [
+                    ListTile(
+                      title: Text(
+                        'Date: ${_date.toIso8601String().split('T').first}',
+                      ),
+                      trailing: TextButton(
+                        onPressed: _pickDate,
+                        child: const Text('Changer'),
+                      ),
+                    ),
+                    TextFormField(
+                      controller: _deathsCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Nombre de morts aujourd\'hui',
+                      ),
+                      validator: (v) => (int.tryParse(v ?? '') == null)
+                          ? 'Entrez un nombre valide'
+                          : null,
+                    ),
+                    if (_isLayer)
+                      TextFormField(
+                        controller: _eggsCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Nombre d\'œufs produits',
+                        ),
+                        validator: (v) => (int.tryParse(v ?? '') == null)
+                            ? 'Entrez un nombre valide'
+                            : null,
+                      )
+                    else
+                      TextFormField(
+                        controller: _weightCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Poids moyen (kg)',
+                        ),
+                        validator: (v) =>
+                            (v != null &&
+                                v.isNotEmpty &&
+                                double.tryParse(v) == null)
+                            ? 'Entrez un poids valide'
+                            : null,
+                      ),
+                    TextFormField(
+                      controller: _feedCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Quantité d\'aliments (kg)',
+                      ),
+                      validator: (v) =>
+                          (v != null &&
+                              v.isNotEmpty &&
+                              double.tryParse(v) == null)
+                          ? 'Entrez un nombre valide'
+                          : null,
+                    ),
+                    TextFormField(
+                      controller: _waterCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Quantité d\'eau (L)',
+                      ),
+                      validator: (v) =>
+                          (v != null &&
+                              v.isNotEmpty &&
+                              double.tryParse(v) == null)
+                          ? 'Entrez un nombre valide'
+                          : null,
+                    ),
+                    TextFormField(
+                      controller: _obsCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Observations (facultatif)',
+                      ),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                 ),
-              TextFormField(
-                controller: _feedCtrl,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Quantité d\'aliments (kg)',
-                ),
-                validator: (v) =>
-                    (v != null && v.isNotEmpty && double.tryParse(v) == null)
-                    ? 'Entrez un nombre valide'
-                    : null,
               ),
-              TextFormField(
-                controller: _waterCtrl,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Quantité d\'eau (L)',
-                ),
-                validator: (v) =>
-                    (v != null && v.isNotEmpty && double.tryParse(v) == null)
-                    ? 'Entrez un nombre valide'
-                    : null,
-              ),
-              TextFormField(
-                controller: _obsCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Observations (facultatif)',
-                ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: _submit,
-                child: const Text('Enregistrer'),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

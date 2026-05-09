@@ -14,20 +14,9 @@ class BuildingsScreen extends StatefulWidget {
 class _BuildingsScreenState extends State<BuildingsScreen> {
   final _service = BuildingService();
   late final _repo = BuildingRepositoryImpl(_service);
-  final TextEditingController _searchController = TextEditingController();
-  String _query = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(() {
-      setState(() => _query = _searchController.text.trim().toLowerCase());
-    });
-  }
 
   @override
   void dispose() {
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -83,90 +72,87 @@ class _BuildingsScreenState extends State<BuildingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openCreate,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: const Icon(Icons.add, color: Colors.black87),
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            Container(
-              height: 160,
-              width: double.infinity,
+            // Hero header matching TypesScreen
+            Padding(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.secondary,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 96,
-                    height: 96,
-                    decoration: const BoxDecoration(
-                      color: Colors.white24,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.home_work_rounded,
-                      size: 54,
-                      color: Colors.white,
-                    ),
+              child: Container(
+                height: 130,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF5DB83D), Color(0xFF8FD14E)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  const SizedBox(width: 16),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF5DB83D).withValues(alpha: 0.25),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
                       children: [
-                        Text(
-                          'Bâtiments',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.home_work_rounded,
                             color: Colors.white,
+                            size: 28,
                           ),
                         ),
-                        SizedBox(height: 6),
-                        Text(
-                          'Suivi des capacités et statuts',
-                          style: TextStyle(color: Colors.white70),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Text(
+                                'Bâtiments',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              SizedBox(height: 6),
+                              Text(
+                                'Suivi des capacités et statuts',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.search),
-                        hintText: 'Rechercher un bâtiment',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: _openCreate,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Ajouter'),
-                  ),
-                ],
-              ),
-            ),
+
+            const SizedBox(height: 8),
+
             Expanded(
               child: StreamBuilder<List<Building>>(
                 stream: _repo.watchBuildings(),
@@ -183,18 +169,8 @@ class _BuildingsScreenState extends State<BuildingsScreen> {
                     );
                   }
 
-                  final buildings = (snapshot.data ?? const <Building>[]).where(
-                    (building) {
-                      if (_query.isEmpty) return true;
-                      return building.name.toLowerCase().contains(_query) ||
-                          building.status.label.toLowerCase().contains(
-                            _query,
-                          ) ||
-                          (building.activePoultryTypeName ?? '')
-                              .toLowerCase()
-                              .contains(_query);
-                    },
-                  ).toList();
+                  final buildings = (snapshot.data ?? const <Building>[])
+                      .toList();
 
                   if (buildings.isEmpty) {
                     return const Center(
