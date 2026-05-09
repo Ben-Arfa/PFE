@@ -14,20 +14,9 @@ class TypesScreen extends StatefulWidget {
 class _TypesScreenState extends State<TypesScreen> {
   final _service = PoultryTypeService();
   late final _repo = PoultryTypeRepositoryImpl(_service);
-  final TextEditingController _searchController = TextEditingController();
-  String _query = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(() {
-      setState(() => _query = _searchController.text.trim().toLowerCase());
-    });
-  }
 
   @override
   void dispose() {
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -84,93 +73,87 @@ class _TypesScreenState extends State<TypesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
+    // no theme currently used here
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openCreateScreen,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: const Icon(Icons.add, color: Colors.black87),
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            // Hero header
-            Container(
-              height: 160,
-              width: double.infinity,
+            // Hero header adapted to match the "Types" action card style
+            Padding(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.secondary,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 96,
-                    height: 96,
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.pets,
-                      size: 56,
-                      color: Colors.white,
-                    ),
+              child: Container(
+                height: 130,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF5DB83D), Color(0xFF8FD14E)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Text(
-                          'Types de volailles',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF5DB83D).withValues(alpha: 0.25),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.category_rounded,
                             color: Colors.white,
+                            size: 28,
                           ),
                         ),
-                        SizedBox(height: 6),
-                        Text(
-                          'Gérez les races et paramètres',
-                          style: TextStyle(color: Colors.white70),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Text(
+                                'Types de volailles',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              SizedBox(height: 6),
+                              Text(
+                                'Gérez les races et paramètres',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
 
-            // Actions + search
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.search),
-                        hintText: 'Rechercher un type',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: _openCreateScreen,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Ajouter'),
-                  ),
-                ],
-              ),
-            ),
+            const SizedBox(height: 8),
 
             // List
             Expanded(
@@ -189,11 +172,7 @@ class _TypesScreenState extends State<TypesScreen> {
                     );
                   }
 
-                  final types = (snapshot.data ?? []).where((t) {
-                    if (_query.isEmpty) return true;
-                    return t.name.toLowerCase().contains(_query) ||
-                        t.category.toLowerCase().contains(_query);
-                  }).toList();
+                  final types = (snapshot.data ?? []).toList();
 
                   if (types.isEmpty) {
                     return const Center(
@@ -230,7 +209,15 @@ class _TypesScreenState extends State<TypesScreen> {
                             ),
                             child: Row(
                               children: [
-                                CircleAvatar(child: const Icon(Icons.pets)),
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    type.category == 'chair' ? '🍗' : '🥚',
+                                    style: const TextStyle(fontSize: 20),
+                                  ),
+                                ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
