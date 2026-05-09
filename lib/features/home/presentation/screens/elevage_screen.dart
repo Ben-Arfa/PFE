@@ -4,7 +4,6 @@ import 'package:kiwo/features/gestions_des_batiments/presentation/screens/buildi
 import 'package:kiwo/features/gestions_des_lots_des_volailles/presentation/screens/lots_screen.dart';
 import 'package:kiwo/features/saisie_quotidienne/presentation/screens/saisie_home_screen.dart';
 import 'package:kiwo/features/suivi_des_vaccinations/presentation/screens/vaccinations_screen.dart';
-import 'package:kiwo/shared/presentation/theme/app_colors.dart';
 
 class ElevageScreen extends StatefulWidget {
   const ElevageScreen({super.key});
@@ -56,98 +55,149 @@ class _ElevageScreenState extends State<ElevageScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            height: 180,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.green.withValues(alpha: 0.95),
-                  AppColors.green.withValues(alpha: 0.7),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(20),
-              ),
-            ),
+          Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Row(
-                  children: const [
-                    CircleAvatar(
-                      radius: 28,
-                      backgroundColor: Colors.white24,
-                      child: Icon(Icons.pets, size: 32, color: Colors.white),
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Gestion de l\'élevage',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
+            child: Container(
+              height: 130,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF5DB83D).withValues(alpha: 0.98),
+                    const Color(0xFF8FD14E).withValues(alpha: 0.85),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF5DB83D).withValues(alpha: 0.25),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    children: const [
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: Colors.white24,
+                        child: Text('🐔', style: TextStyle(fontSize: 28)),
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Gestion de l\'élevage',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Accède rapidement aux actions principales de ton élevage',
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Accès rapide aux sections principales',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _ActionButton(
-                  icon: Icons.list_alt_outlined,
-                  title: 'Types de volailles',
-                  subtitle: 'Créer et gérer les types',
-                  onTap: () => setState(() => _section = _ElevageSection.types),
+                const Text(
+                  'Structure de l\'élevage',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
                 ),
-                const SizedBox(height: 12),
-                _ActionButton(
-                  icon: Icons.apartment_outlined,
-                  title: 'Bâtiments',
-                  subtitle: 'Créer et gérer les bâtiments',
-                  onTap: () =>
-                      setState(() => _section = _ElevageSection.buildings),
+                const SizedBox(height: 10),
+                GridView.count(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  childAspectRatio: 2.6,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    _ActionCard(
+                      icon: Icons.category_rounded,
+                      title: 'Types',
+                      subtitle: 'Créer & structurer',
+                      gradient: const [Color(0xFF5DB83D), Color(0xFF8FD14E)],
+                      onTap: () =>
+                          setState(() => _section = _ElevageSection.types),
+                    ),
+                    _ActionCard(
+                      icon: Icons.apartment_rounded,
+                      title: 'Bâtiments',
+                      subtitle: 'Organiser',
+                      gradient: const [Color(0xFF4A9B6F), Color(0xFF7FBFA0)],
+                      onTap: () =>
+                          setState(() => _section = _ElevageSection.buildings),
+                    ),
+                    _ActionCard(
+                      icon: Icons.inventory_2_rounded,
+                      title: 'Lots',
+                      subtitle: 'Gérer',
+                      gradient: const [Color(0xFF8A5A2B), Color(0xFFD39A5D)],
+                      onTap: () =>
+                          setState(() => _section = _ElevageSection.lots),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                _ActionButton(
-                  icon: Icons.inventory_2_outlined,
-                  title: 'Lots de volailles',
-                  subtitle: 'Gérer vos lots',
-                  onTap: () => setState(() => _section = _ElevageSection.lots),
+                const SizedBox(height: 20),
+                const Text(
+                  'Suivi',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
                 ),
-                const SizedBox(height: 12),
-                _ActionButton(
-                  icon: Icons.event_note_outlined,
-                  title: 'Saisie quotidiennes',
-                  subtitle: 'Observations quotidiennes',
-                  onTap: () =>
-                      setState(() => _section = _ElevageSection.saisie),
+                const SizedBox(height: 10),
+                GridView.count(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  childAspectRatio: 2.6,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    _ActionCard(
+                      icon: Icons.event_note_rounded,
+                      title: 'Saisie',
+                      subtitle: 'Quotidienne',
+                      gradient: const [Color(0xFF2563EB), Color(0xFF60A5FA)],
+                      onTap: () =>
+                          setState(() => _section = _ElevageSection.saisie),
+                    ),
+                    _ActionCard(
+                      icon: Icons.vaccines_rounded,
+                      title: 'Santé',
+                      subtitle: 'Vaccinations',
+                      gradient: const [Color(0xFF8B5CF6), Color(0xFFB794F4)],
+                      onTap: () => setState(
+                        () => _section = _ElevageSection.vaccinations,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                _ActionButton(
-                  icon: Icons.vaccines_outlined,
-                  title: 'Santé & Vaccinations',
-                  subtitle: 'Gérer les vaccinations',
-                  onTap: () =>
-                      setState(() => _section = _ElevageSection.vaccinations),
-                ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
               ],
             ),
           ),
@@ -157,64 +207,84 @@ class _ElevageScreenState extends State<ElevageScreen> {
   }
 }
 
-class _ActionButton extends StatelessWidget {
+class _ActionCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
+  final List<Color> gradient;
   final VoidCallback onTap;
 
-  const _ActionButton({
+  const _ActionCard({
     required this.icon,
     required this.title,
     required this.subtitle,
+    required this.gradient,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 70,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black87,
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: gradient,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: gradient.first.withValues(alpha: 0.18),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-        ),
-        onPressed: onTap,
-        child: Row(
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: AppColors.green.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: AppColors.green, size: 24),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(icon, color: Colors.white, size: 16),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Colors.white,
+                      size: 10,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    height: 1.0,
+                    fontWeight: FontWeight.w900,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(fontSize: 12, color: Colors.black54),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const Icon(Icons.chevron_right_rounded, color: Colors.black45),
-          ],
+          ),
         ),
       ),
     );
