@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:kiwo/app/di/service_locator.dart';
-import 'package:kiwo/features/profile/presentation/screens/profile_screen.dart';
+import 'package:kiwo/features/home/presentation/screens/dashboard_screen.dart';
 import 'package:kiwo/features/home/presentation/screens/elevage_screen.dart';
 import 'package:kiwo/features/home/presentation/screens/iot_objects_screen.dart';
-import 'package:kiwo/features/home/presentation/screens/dashboard_screen.dart';
+import 'package:kiwo/features/profile/presentation/screens/profile_screen.dart';
 import 'package:kiwo/shared/presentation/theme/app_colors.dart';
 import 'package:kiwo/shared/presentation/theme/kiwo_theme.dart';
 import 'package:kiwo/shared/presentation/theme/theme_provider.dart';
@@ -21,23 +21,28 @@ class _HomeScreenState extends State<HomeScreen> {
   final Map<int, Widget?> _pagesCache = {};
 
   @override
+  void initState() {
+    super.initState();
+    _ensurePageBuilt(0);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final t = ThemeProvider.instance;
-    // children for IndexedStack: use cached widgets when available, otherwise placeholders
+    final theme = ThemeProvider.instance;
     final children = List<Widget>.generate(
       4,
-      (i) => _pagesCache[i] ?? const SizedBox.shrink(),
+      (index) => _pagesCache[index] ?? const SizedBox.shrink(),
     );
 
     return KiwoThemeWrapper(
       child: Scaffold(
-        backgroundColor: t.bgColor,
+        backgroundColor: theme.bgColor,
         appBar: AppBar(
-          backgroundColor: t.headerColor,
-          foregroundColor: t.textColor,
+          backgroundColor: theme.headerColor,
+          foregroundColor: theme.textColor,
           elevation: 0,
           titleSpacing: 20,
-          title: _buildAppBarTitle(t),
+          title: _buildAppBarTitle(theme),
           actions: [
             IconButton(
               tooltip: 'Deconnexion',
@@ -49,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
         body: IndexedStack(index: _currentIndex, children: children),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _currentIndex,
-          backgroundColor: t.headerColor,
+          backgroundColor: theme.headerColor,
           indicatorColor: AppColors.green.withValues(alpha: 0.16),
           labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
           onDestinationSelected: (index) {
@@ -83,13 +88,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    // prebuild the first page for faster first display
-    _ensurePageBuilt(0);
   }
 
   void _ensurePageBuilt(int index) {

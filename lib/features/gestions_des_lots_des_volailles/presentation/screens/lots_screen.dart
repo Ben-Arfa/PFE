@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../../gestion_des_types_des_volailles/data/repositories/poultry_type_repository_impl.dart';
+import '../../../gestion_des_types_des_volailles/data/services/poultry_type_service.dart';
+import '../../../gestions_des_batiments/data/repositories/building_repository_impl.dart';
+import '../../../gestions_des_batiments/data/services/building_service.dart';
 import '../../data/repositories/lot_repository_impl.dart';
 import '../../data/services/lot_service.dart';
 import '../../domain/entities/flock_lot.dart';
+import 'lot_form_screen.dart';
 import '../../../suivi_des_lots/presentation/screens/lot_closure_screen.dart';
 
 class LotsScreen extends StatefulWidget {
@@ -13,10 +18,32 @@ class LotsScreen extends StatefulWidget {
 
 class _LotsScreenState extends State<LotsScreen> {
   final _lotRepo = LotRepositoryImpl(LotService());
+  final _buildingRepo = BuildingRepositoryImpl(BuildingService());
+  final _typeRepo = PoultryTypeRepositoryImpl(PoultryTypeService());
+
+  Future<void> _openCreateLotForm() async {
+    final created = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => LotFormScreen(
+          lotRepo: _lotRepo,
+          buildingRepo: _buildingRepo,
+          typeRepo: _typeRepo,
+        ),
+      ),
+    );
+
+    if (!mounted || created != true) return;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openCreateLotForm,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: const Icon(Icons.add, color: Colors.black87),
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -109,10 +136,10 @@ class _LotsScreenState extends State<LotsScreen> {
 
                   final lots = snapshot.data ?? const <FlockLot>[];
                   if (lots.isEmpty) {
-                    return const Center(
+                    return Center(
                       child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text('Aucun lot créé pour le moment.'),
+                        padding: const EdgeInsets.all(24),
+                        child: const Text('Aucun lot créé pour le moment.'),
                       ),
                     );
                   }
@@ -197,6 +224,9 @@ class _LotsScreenState extends State<LotsScreen> {
                                     IconButton(
                                       tooltip: 'Supprimer le lot',
                                       onPressed: () async {
+                                        final messenger = ScaffoldMessenger.of(
+                                          context,
+                                        );
                                         final confirm = await showDialog<bool>(
                                           context: context,
                                           builder: (ctx) => AlertDialog(
@@ -225,9 +255,7 @@ class _LotsScreenState extends State<LotsScreen> {
                                           try {
                                             await _lotRepo.deleteLot(lot.id);
                                             if (mounted) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
+                                              messenger.showSnackBar(
                                                 const SnackBar(
                                                   content: Text('Lot supprimé'),
                                                 ),
@@ -235,9 +263,7 @@ class _LotsScreenState extends State<LotsScreen> {
                                             }
                                           } catch (e) {
                                             if (mounted) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
+                                              messenger.showSnackBar(
                                                 SnackBar(
                                                   content: Text('Erreur: $e'),
                                                 ),
