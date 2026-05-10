@@ -1,5 +1,11 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../gestions_des_lots_des_volailles/domain/entities/flock_lot.dart';
 import '../../../saisie_quotidienne/data/repositories/daily_entry_repository_impl.dart';
@@ -86,10 +92,199 @@ class LotHistoryScreen extends StatelessWidget {
     ).showSnackBar(const SnackBar(content: Text('Évènement ajouté')));
   }
 
+  Future<void> _downloadLotReportPdf(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Génération du PDF en cours...')),
+    );
+
+    try {
+      final entries = await _entriesRepo.watchEntriesForLot(lot.id).first;
+      final events = await _eventsRepo.watchEvents(lot.id).first;
+      final pdfBytes = await _buildLotReportPdf(entries, events);
+      final fileName = 'bilan_lot_${_sanitizeFileName(lot.identifier)}.pdf';
+      final directory = await _resolvePdfDirectory();
+      final file = File('${directory.path}${Platform.pathSeparator}$fileName');
+      await file.writeAsBytes(pdfBytes, flush: true);
+
+      await OpenFilex.open(file.path);
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('PDF enregistré dans ${file.path}'),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Impossible de générer le PDF')),
+      );
+    }
+  }
+
+  Future<List<int>> _buildLotReportPdf(
+    List<DailyEntry> entries,
+    List<LotHistoryEvent> events,
+  ) async {
+    final doc = pw.Document();
+    final timeline = <_PdfTimelineRow>[
+      _PdfTimelineRow(
+        date: lot.entryDate.toDate(),
+        title: 'Entrée du lot',
+        details: '${lot.initialBirdCount} sujets - ${lot.buildingName}',
+      ),
+      ...entries.map(
+        (entry) => _PdfTimelineRow(
+          date: entry.date.toDate(),
+          title: 'Saisie quotidienne',
+          details: _isLayer
+              ? 'Morts: ${entry.deathsToday} | Oeufs: ${entry.eggsToday ?? 0} | Aliment: ${entry.feedKg} kg'
+              : 'Morts: ${entry.deathsToday} | Poids: ${entry.avgWeightKg ?? '-'} kg | Aliment: ${entry.feedKg} kg',
+        ),
+      ),
+      ...events.map(
+        (event) => _PdfTimelineRow(
+          date: event.eventAt.toDate(),
+          title: event.title,
+          details: event.description,
+        ),
+      ),
+      if (lot.closedAt != null)
+        _PdfTimelineRow(
+          date: lot.closedAt!.toDate(),
+          title: 'Clôture du lot',
+          details: lot.closureReason ?? 'Lot clôturé',
+        ),
+    ]..sort((a, b) => a.date.compareTo(b.date));
+
+    final currentBirds = lot.currentBirdCount;
+    final mortalityCount = (lot.initialBirdCount - currentBirds).clamp(
+      0,
+      lot.initialBirdCount,
+    );
+    final mortalityRate = lot.initialBirdCount <= 0
+        ? 0.0
+        : (mortalityCount / lot.initialBirdCount) * 100;
+
+    doc.addPage(
+      pw.MultiPage(
+        build: (context) => [
+          pw.Text(
+            'Bilan du lot ${lot.identifier}',
+            style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 8),
+          pw.Text('Bâtiment: ${lot.buildingName}'),
+          pw.Text('Type: ${lot.poultryTypeName}'),
+          pw.Text('Statut: ${lot.isActive ? 'Actif' : 'Clos'}'),
+          pw.Text('Date d\'entrée: ${_formatDate(lot.entryDate.toDate())}'),
+          if (lot.closedAt != null)
+            pw.Text('Date de clôture: ${_formatDate(lot.closedAt!.toDate())}'),
+          pw.SizedBox(height: 12),
+          pw.Text(
+            'Synthèse',
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 6),
+          pw.Bullet(text: 'Sujets initiaux: ${lot.initialBirdCount}'),
+          pw.Bullet(text: 'Sujets actuels: $currentBirds'),
+          pw.Bullet(
+            text:
+                'Mortalité: $mortalityCount (${mortalityRate.toStringAsFixed(1)}%)',
+          ),
+          if (lot.closedSubjectsOut != null)
+            pw.Bullet(text: 'Sujets sortis: ${lot.closedSubjectsOut}'),
+          if (lot.finalAvgWeightKg != null)
+            pw.Bullet(
+              text:
+                  'Poids moyen final: ${lot.finalAvgWeightKg!.toStringAsFixed(2)} kg',
+            ),
+          if (lot.totalEggProduction != null)
+            pw.Bullet(
+              text: 'Production totale d\'oeufs: ${lot.totalEggProduction}',
+            ),
+          if (lot.closureSummary != null && lot.closureSummary!.isNotEmpty)
+            pw.Bullet(text: 'Résumé: ${lot.closureSummary}'),
+          pw.SizedBox(height: 12),
+          pw.Text(
+            'Journal chronologique',
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 6),
+          ...timeline.map(
+            (row) => pw.Container(
+              margin: const pw.EdgeInsets.only(bottom: 6),
+              padding: const pw.EdgeInsets.all(8),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.grey300),
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    '${_formatDate(row.date)} - ${row.title}',
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  ),
+                  pw.SizedBox(height: 2),
+                  pw.Text(row.details.isEmpty ? '-' : row.details),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return doc.save();
+  }
+
+  String _formatDate(DateTime date) {
+    final d = date.day.toString().padLeft(2, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final y = date.year.toString();
+    return '$d/$m/$y';
+  }
+
+  Future<Directory> _resolvePdfDirectory() async {
+    final downloadsDirectory = await getDownloadsDirectory();
+    if (downloadsDirectory != null) {
+      final appDirectory = Directory(
+        '${downloadsDirectory.path}${Platform.pathSeparator}Kiwo',
+      );
+      if (!await appDirectory.exists()) {
+        await appDirectory.create(recursive: true);
+      }
+      return appDirectory;
+    }
+
+    final documentsDirectory = await getApplicationDocumentsDirectory();
+    final appDirectory = Directory(
+      '${documentsDirectory.path}${Platform.pathSeparator}Kiwo',
+    );
+    if (!await appDirectory.exists()) {
+      await appDirectory.create(recursive: true);
+    }
+    return appDirectory;
+  }
+
+  String _sanitizeFileName(String input) {
+    return input.replaceAll(RegExp(r'[^a-zA-Z0-9_-]+'), '_');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Historique — ${lot.identifier}')),
+      appBar: AppBar(
+        title: Text('Historique — ${lot.identifier}'),
+        actions: [
+          IconButton(
+            tooltip: 'Télécharger le bilan PDF',
+            onPressed: () => _downloadLotReportPdf(context),
+            icon: const Icon(Icons.picture_as_pdf_rounded),
+          ),
+        ],
+      ),
       floatingActionButton: lot.isActive
           ? FloatingActionButton.extended(
               onPressed: () => _addEvent(context),
@@ -240,5 +435,17 @@ class _TimelineRow {
     required this.title,
     required this.subtitle,
     required this.icon,
+  });
+}
+
+class _PdfTimelineRow {
+  final DateTime date;
+  final String title;
+  final String details;
+
+  _PdfTimelineRow({
+    required this.date,
+    required this.title,
+    required this.details,
   });
 }

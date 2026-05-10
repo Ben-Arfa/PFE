@@ -4,6 +4,7 @@ import 'package:kiwo/features/gestions_des_batiments/presentation/screens/buildi
 import 'package:kiwo/features/gestions_des_lots_des_volailles/presentation/screens/lots_screen.dart';
 import 'package:kiwo/features/saisie_quotidienne/presentation/screens/saisie_home_screen.dart';
 import 'package:kiwo/features/suivi_des_vaccinations/presentation/screens/vaccinations_screen.dart';
+import 'package:kiwo/features/historique/presentation/screens/historique_screen.dart';
 
 class ElevageScreen extends StatefulWidget {
   const ElevageScreen({super.key});
@@ -193,6 +194,17 @@ class _ElevageScreenState extends State<ElevageScreen> {
                       gradient: const [Color(0xFF8B5CF6), Color(0xFFB794F4)],
                       onTap: () => setState(
                         () => _section = _ElevageSection.vaccinations,
+                      ),
+                    ),
+                    _ActionCard(
+                      icon: Icons.history_rounded,
+                      title: 'Historiques',
+                      subtitle: 'Journal',
+                      gradient: const [Color(0xFF16A34A), Color(0xFF5DB83D)],
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const HistoriqueScreen(),
+                        ),
                       ),
                     ),
                   ],
