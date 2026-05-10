@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:kiwo/core/theme_provider.dart';
 import 'package:kiwo/features/profile/data/repositories/profile_repository_impl.dart';
 import 'package:kiwo/features/profile/data/services/profile_service.dart';
@@ -18,6 +20,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ProfileService(),
   );
 
+  CollectionReference<Map<String, dynamic>>? _notificationsCollection() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return null;
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('notifications');
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = ThemeProvider.instance;
@@ -33,25 +44,78 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const NotificationsScreen(),
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.headerColor,
-                      foregroundColor: theme.textColor,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.notifications_outlined),
-                        SizedBox(width: 8),
-                        Text('Notifications'),
-                      ],
-                    ),
+                  child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                    stream: _notificationsCollection()?.snapshots(),
+                    builder: (context, snapshot) {
+                      final docs = snapshot.data?.docs ?? const [];
+                      final unreadCount = docs.where((doc) {
+                        final data = doc.data();
+                        final status = data['status'] as String?;
+                        final isRelevant =
+                            status == 'scheduled' || status == 'received';
+                        final isRead = data['isRead'] as bool? ?? false;
+                        return isRelevant && !isRead;
+                      }).length;
+
+                      return ElevatedButton(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const NotificationsScreen(),
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.headerColor,
+                          foregroundColor: theme.textColor,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                const Icon(Icons.notifications_outlined),
+                                if (unreadCount > 0)
+                                  Positioned(
+                                    right: -8,
+                                    top: -8,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 5,
+                                        vertical: 2,
+                                      ),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.rectangle,
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(10),
+                                        ),
+                                      ),
+                                      constraints: const BoxConstraints(
+                                        minWidth: 18,
+                                        minHeight: 18,
+                                      ),
+                                      child: Text(
+                                        unreadCount > 99
+                                            ? '99+'
+                                            : unreadCount.toString(),
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('Notifications'),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(width: 12),

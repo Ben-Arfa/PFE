@@ -28,6 +28,38 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   void initState() {
     super.initState();
     VaccinationNotificationService.instance.processDueReminders();
+    _markAllAsRead();
+  }
+
+  Future<void> _markAllAsRead() async {
+    final collection = _notificationsCollection();
+    if (collection == null) return;
+
+    final snapshot = await collection.get();
+    if (snapshot.docs.isEmpty) return;
+
+    final batch = FirebaseFirestore.instance.batch();
+    var hasUpdates = false;
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final status = data['status'] as String?;
+      final isRelevant = status == 'scheduled' || status == 'received';
+      final isRead = data['isRead'] as bool? ?? false;
+
+      if (isRelevant && !isRead) {
+        batch.set(doc.reference, {
+          'isRead': true,
+          'readAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        hasUpdates = true;
+      }
+    }
+
+    if (hasUpdates) {
+      await batch.commit();
+    }
   }
 
   @override

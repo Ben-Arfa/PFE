@@ -170,6 +170,8 @@ class VaccinationNotificationService {
       'message': body,
       'scheduledAt': Timestamp.fromDate(plannedDate),
       'notificationId': notificationId,
+      'isRead': false,
+      'readAt': null,
       'status': isDue ? 'received' : 'scheduled',
       'receivedAt': isDue ? Timestamp.fromDate(now) : null,
       'createdAt': FieldValue.serverTimestamp(),
