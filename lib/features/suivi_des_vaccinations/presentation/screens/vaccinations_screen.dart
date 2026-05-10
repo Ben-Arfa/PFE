@@ -45,8 +45,75 @@ class _VaccinationsScreenState extends State<VaccinationsScreen> {
 
     return Scaffold(
       backgroundColor: theme.bgColor,
-      appBar: AppBar(title: const Text('Suivi des vaccinations')),
-      body: content,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Container(
+                height: 130,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF5DB83D), Color(0xFF8FD14E)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF5DB83D).withValues(alpha: 0.25),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.vaccines_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Vaccinations',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            'Suivi des plans et rappels',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(child: content),
+          ],
+        ),
+      ),
     );
   }
 
@@ -72,46 +139,26 @@ class _VaccinationsScreenState extends State<VaccinationsScreen> {
         final selectedLot = _selectedLot(activeLots);
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(0, 0, 0, 24),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: _HeaderCard(
-                theme: theme,
-                activeLotsCount: activeLots.length,
-              ),
-            ),
-            const SizedBox(height: 16),
             if (activeLots.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _EmptyLotState(theme: theme),
-              )
+              _EmptyLotState(theme: theme)
             else ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _LotSelectorCard(
-                  theme: theme,
-                  lots: activeLots,
-                  selectedLotId: _selectedLotId ?? activeLots.first.id,
-                  onLotSelected: (lotId) =>
-                      setState(() => _selectedLotId = lotId),
-                ),
+              _LotSelectorCard(
+                theme: theme,
+                lots: activeLots,
+                selectedLotId: _selectedLotId ?? activeLots.first.id,
+                onLotSelected: (lotId) =>
+                    setState(() => _selectedLotId = lotId),
               ),
               const SizedBox(height: 16),
               if (selectedLot != null) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _SelectedLotSummary(theme: theme, lot: selectedLot),
-                ),
+                _SelectedLotSummary(theme: theme, lot: selectedLot),
                 const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _ActionPanel(
-                    theme: theme,
-                    onPlan: () => _openPlanDialog(selectedLot),
-                    onRecord: () => _openRecordDialog(selectedLot),
-                  ),
+                _ActionPanel(
+                  theme: theme,
+                  onPlan: () => _openPlanDialog(selectedLot),
+                  onRecord: () => _openRecordDialog(selectedLot),
                 ),
                 const SizedBox(height: 16),
                 StreamBuilder<List<VaccinationPlan>>(
@@ -128,24 +175,18 @@ class _VaccinationsScreenState extends State<VaccinationsScreen> {
 
                     return Column(
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: _OverviewStrip(
-                            theme: theme,
-                            lot: selectedLot,
-                            pendingCount: pendingPlans.length,
-                            completedCount: completedPlans.length,
-                          ),
+                        _OverviewStrip(
+                          theme: theme,
+                          lot: selectedLot,
+                          pendingCount: pendingPlans.length,
+                          completedCount: completedPlans.length,
                         ),
                         const SizedBox(height: 16),
                         _PlansCard(theme: theme, plans: pendingPlans),
                         const SizedBox(height: 16),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: _CompletedVaccinationsCard(
-                            theme: theme,
-                            plans: completedPlans,
-                          ),
+                        _CompletedVaccinationsCard(
+                          theme: theme,
+                          plans: completedPlans,
                         ),
                       ],
                     );
@@ -173,6 +214,7 @@ class _VaccinationsScreenState extends State<VaccinationsScreen> {
     final vaccineCtrl = TextEditingController();
     final doseCtrl = TextEditingController();
     var plannedDate = DateTime.now().add(const Duration(days: 1));
+    var plannedTime = const TimeOfDay(hour: 8, minute: 0);
     var route = _administrationRoutes.first;
 
     final result = await showModalBottomSheet<bool>(
@@ -277,6 +319,20 @@ class _VaccinationsScreenState extends State<VaccinationsScreen> {
                           }
                         },
                       ),
+                      const SizedBox(height: 12),
+                      _TimeField(
+                        label: 'Heure de rappel',
+                        value: plannedTime,
+                        onTap: () async {
+                          final picked = await showTimePicker(
+                            context: context,
+                            initialTime: plannedTime,
+                          );
+                          if (picked != null) {
+                            setSheetState(() => plannedTime = picked);
+                          }
+                        },
+                      ),
                       const SizedBox(height: 20),
                       Row(
                         children: [
@@ -311,6 +367,14 @@ class _VaccinationsScreenState extends State<VaccinationsScreen> {
 
     if (result != true || !mounted) return;
 
+    final plannedAt = DateTime(
+      plannedDate.year,
+      plannedDate.month,
+      plannedDate.day,
+      plannedTime.hour,
+      plannedTime.minute,
+    );
+
     await _runAction(
       () => _repository.createPlan(
         CreateVaccinationPlanInput(
@@ -318,7 +382,7 @@ class _VaccinationsScreenState extends State<VaccinationsScreen> {
           lotIdentifier: lot.identifier,
           buildingName: lot.buildingName,
           poultryTypeName: lot.poultryTypeName,
-          plannedDate: plannedDate,
+          plannedDate: plannedAt,
           vaccineName: vaccineCtrl.text.trim(),
           administrationRoute: route,
           dosePerSubject: double.parse(doseCtrl.text.replaceAll(',', '.')),
@@ -1328,6 +1392,32 @@ class _DateField extends StatelessWidget {
       child: InputDecorator(
         decoration: InputDecoration(labelText: label),
         child: Text('$day/$month/${local.year}'),
+      ),
+    );
+  }
+}
+
+class _TimeField extends StatelessWidget {
+  final String label;
+  final TimeOfDay value;
+  final VoidCallback onTap;
+
+  const _TimeField({
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hour = value.hour.toString().padLeft(2, '0');
+    final minute = value.minute.toString().padLeft(2, '0');
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: InputDecorator(
+        decoration: InputDecoration(labelText: label),
+        child: Text('$hour:$minute'),
       ),
     );
   }

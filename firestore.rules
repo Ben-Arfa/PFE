@@ -84,5 +84,10 @@ service cloud.firestore {
     match /users/{userId}/iotAutomations/{automationId} {
       allow read, write: if isAdmin() || isOwner(userId);
     }
+
+    // Notifications applicatives (rappels vaccinations, alertes, etc.)
+    match /users/{userId}/notifications/{notificationId} {
+      allow read, write: if isAdmin() || isOwner(userId);
+    }
   }
 }
