@@ -129,7 +129,8 @@ class LotHistoryScreen extends StatelessWidget {
                 'Mortalité: $mortalityCount (${mortalityRate.toStringAsFixed(1)}%)',
           ),
           if (lot.closedSubjectsOut != null)
-            pw.Bullet(text: 'Sujets sortis: ${lot.closedSubjectsOut}'),
+            if (lot.closedSubjectsOut != null)
+              pw.Bullet(text: 'Sujets sortis: ${lot.closedSubjectsOut}'),
           if (lot.finalAvgWeightKg != null)
             pw.Bullet(
               text:
@@ -139,8 +140,30 @@ class LotHistoryScreen extends StatelessWidget {
             pw.Bullet(
               text: 'Production totale d\'oeufs: ${lot.totalEggProduction}',
             ),
-          if (lot.closureSummary != null && lot.closureSummary!.isNotEmpty)
-            pw.Bullet(text: 'Résumé: ${lot.closureSummary}'),
+          if (lot.closureSummary != null)
+            () {
+              final cs = lot.closureSummary;
+              if (cs is Map && (cs as Map).isNotEmpty) {
+                final map = cs as Map;
+                return pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'Résumé',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                    ),
+                    pw.SizedBox(height: 6),
+                    ...map.entries.map((e) {
+                      final k = _translateKeyFr(e.key.toString());
+                      final v = e.value?.toString() ?? '-';
+                      return pw.Bullet(text: '$k: $v');
+                    }),
+                  ],
+                );
+              }
+
+              return pw.Text('Résumé: ${cs.toString()}');
+            }(),
           pw.SizedBox(height: 12),
           pw.Text(
             'Journal chronologique',
@@ -328,7 +351,7 @@ class LotHistoryScreen extends StatelessWidget {
                             const SizedBox(height: 12),
                             Row(
                               children: [
-                                const Icon(Icons.pets, size: 18),
+                                //const Icon(Icons.pets, size: 18),
                                 const SizedBox(width: 8),
                                 Text(
                                   'Sujets sortis: ${lot.closedSubjectsOut ?? '-'}',
@@ -389,7 +412,7 @@ class LotHistoryScreen extends StatelessWidget {
                                     final entries = (summary as Map).entries
                                         .map(
                                           (e) => MapEntry(
-                                            e.key.toString(),
+                                            _translateKeyFr(e.key.toString()),
                                             e.value,
                                           ),
                                         )
@@ -456,6 +479,25 @@ class LotHistoryScreen extends StatelessWidget {
       default:
         return Icons.note_alt_outlined;
     }
+  }
+
+  String _translateKeyFr(String key) {
+    const translations = {
+      'initialCount': 'Nombre initial',
+      'finalCount': 'Nombre final',
+      'mortality': 'Mortalité',
+      'mortalityRate': 'Taux de mortalité',
+      'avgWeight': 'Poids moyen',
+      'totalEggs': 'Total œufs',
+      'feedConsumption': 'Consommation aliment',
+      'duration': 'Durée',
+      'startDate': 'Date début',
+      'endDate': 'Date fin',
+      'subjectsOut': 'Sujets sortis',
+      'reason': 'Motif',
+      'notes': 'Remarques',
+    };
+    return translations[key] ?? key;
   }
 }
 
