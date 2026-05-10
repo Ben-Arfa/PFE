@@ -142,19 +142,19 @@ class _DailyEntryFormScreenState extends State<DailyEntryFormScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
+                            children: const [
                               Text(
-                                'Saisie — ${widget.lot.identifier}',
-                                style: const TextStyle(
+                                'Saisie quotidiennes',
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w900,
                                 ),
                               ),
-                              const SizedBox(height: 6),
+                              SizedBox(height: 6),
                               Text(
-                                '${widget.lot.poultryTypeName} · ${widget.lot.buildingName}',
-                                style: const TextStyle(color: Colors.white70),
+                                'Enregistrement des données journalières',
+                                style: TextStyle(color: Colors.white70),
                               ),
                             ],
                           ),

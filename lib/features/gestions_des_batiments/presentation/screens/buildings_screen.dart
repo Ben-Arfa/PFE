@@ -192,11 +192,6 @@ class _BuildingsScreenState extends State<BuildingsScreen> {
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final building = buildings[index];
-                      final statusColor = switch (building.status) {
-                        BuildingStatus.active => Colors.green,
-                        BuildingStatus.empty => Colors.blue,
-                        BuildingStatus.disinfecting => Colors.orange,
-                      };
 
                       return Card(
                         elevation: 2,
@@ -213,37 +208,28 @@ class _BuildingsScreenState extends State<BuildingsScreen> {
                             ),
                             child: Row(
                               children: [
-                                CircleAvatar(
-                                  backgroundColor: statusColor.withValues(
-                                    alpha: 0.15,
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                  foregroundColor: statusColor,
-                                  child: Text(
-                                    building.status.label.substring(0, 1),
+                                  child: const Icon(
+                                    Icons.home_work_rounded,
+                                    color: Colors.green,
+                                    size: 24,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        building.name,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        '${building.areaM2.toStringAsFixed(1)} m² · ${building.capacityMax} sujets · ${building.status.label}',
-                                        style: const TextStyle(
-                                          color: Colors.black54,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
+                                  child: Text(
+                                    building.name,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
                                 PopupMenuButton<String>(

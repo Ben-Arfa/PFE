@@ -220,26 +220,12 @@ class _TypesScreenState extends State<TypesScreen> {
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        type.name,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        '${type.category == 'chair' ? 'Chair' : 'Pondeuse'} · ${type.targetTempMin.toStringAsFixed(1)}-${type.targetTempMax.toStringAsFixed(1)}°C · ${type.targetHumidityMin.toStringAsFixed(1)}-${type.targetHumidityMax.toStringAsFixed(1)}%',
-                                        style: const TextStyle(
-                                          color: Colors.black54,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
+                                  child: Text(
+                                    type.name,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
                                 PopupMenuButton<String>(

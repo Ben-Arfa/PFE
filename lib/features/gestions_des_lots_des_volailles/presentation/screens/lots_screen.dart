@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../gestion_des_types_des_volailles/data/repositories/poultry_type_repository_impl.dart';
-import '../../../gestion_des_types_des_volailles/data/services/poultry_type_service.dart';
-import '../../../gestions_des_batiments/data/repositories/building_repository_impl.dart';
-import '../../../gestions_des_batiments/data/services/building_service.dart';
 import '../../data/repositories/lot_repository_impl.dart';
 import '../../data/services/lot_service.dart';
 import '../../domain/entities/flock_lot.dart';
-import 'lot_form_screen.dart';
 import '../../../suivi_des_lots/presentation/screens/lot_closure_screen.dart';
 
 class LotsScreen extends StatefulWidget {
@@ -18,30 +13,10 @@ class LotsScreen extends StatefulWidget {
 
 class _LotsScreenState extends State<LotsScreen> {
   final _lotRepo = LotRepositoryImpl(LotService());
-  final _buildingRepo = BuildingRepositoryImpl(BuildingService());
-  final _typeRepo = PoultryTypeRepositoryImpl(PoultryTypeService());
-
-  void _openCreate() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => LotFormScreen(
-          lotRepo: _lotRepo,
-          buildingRepo: _buildingRepo,
-          typeRepo: _typeRepo,
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openCreate,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        child: const Icon(Icons.add, color: Colors.black87),
-      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -152,86 +127,130 @@ class _LotsScreenState extends State<LotsScreen> {
                     itemBuilder: (context, index) {
                       final lot = lots[index];
                       return Card(
-                        child: ListTile(
-                          title: Text(lot.identifier),
-                          subtitle: Text(
-                            '${lot.poultryTypeName} · ${lot.buildingName}',
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
                           ),
-                          isThreeLine: false,
-                          trailing: Wrap(
-                            spacing: 4,
-                            runSpacing: 4,
-                            alignment: WrapAlignment.end,
+                          child: Row(
                             children: [
-                              if (lot.isActive)
-                                TextButton(
-                                  onPressed: () => Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          LotClosureScreen(lot: lot),
-                                    ),
-                                  ),
-                                  child: const Text('Clôturer'),
-                                )
-                              else ...[
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 6),
-                                  child: Text('Clos'),
+                              Container(
+                                width: 40,
+                                height: 40,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
-                                IconButton(
-                                  tooltip: 'Supprimer le lot',
-                                  onPressed: () async {
-                                    final confirm = await showDialog<bool>(
-                                      context: context,
-                                      builder: (ctx) => AlertDialog(
-                                        title: const Text(
-                                          'Confirmer la suppression',
-                                        ),
-                                        content: Text(
-                                          'Voulez-vous vraiment supprimer le lot "${lot.identifier}" ? Cette action est irréversible.',
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.of(ctx).pop(false),
-                                            child: const Text('Annuler'),
-                                          ),
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.of(ctx).pop(true),
-                                            child: const Text('Supprimer'),
-                                          ),
-                                        ],
+                                child: const Icon(
+                                  Icons.view_module_rounded,
+                                  color: Colors.green,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      lot.identifier,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
                                       ),
-                                    );
-                                    if (confirm == true) {
-                                      try {
-                                        await _lotRepo.deleteLot(lot.id);
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('Lot supprimé'),
-                                            ),
-                                          );
-                                        }
-                                      } catch (e) {
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text('Erreur: $e'),
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    }
-                                  },
-                                  icon: const Icon(Icons.delete_outline),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      lot.buildingName,
+                                      style: const TextStyle(
+                                        color: Colors.black54,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
+                              Wrap(
+                                spacing: 4,
+                                runSpacing: 4,
+                                alignment: WrapAlignment.end,
+                                children: [
+                                  if (lot.isActive)
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  LotClosureScreen(lot: lot),
+                                            ),
+                                          ),
+                                      child: const Text('Clôturer'),
+                                    )
+                                  else ...[
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                      ),
+                                      child: Text('Clos'),
+                                    ),
+                                    IconButton(
+                                      tooltip: 'Supprimer le lot',
+                                      onPressed: () async {
+                                        final confirm = await showDialog<bool>(
+                                          context: context,
+                                          builder: (ctx) => AlertDialog(
+                                            title: const Text(
+                                              'Confirmer la suppression',
+                                            ),
+                                            content: Text(
+                                              'Voulez-vous vraiment supprimer le lot "${lot.identifier}" ? Cette action est irréversible.',
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.of(
+                                                  ctx,
+                                                ).pop(false),
+                                                child: const Text('Annuler'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () =>
+                                                    Navigator.of(ctx).pop(true),
+                                                child: const Text('Supprimer'),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                        if (confirm == true) {
+                                          try {
+                                            await _lotRepo.deleteLot(lot.id);
+                                            if (mounted) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text('Lot supprimé'),
+                                                ),
+                                              );
+                                            }
+                                          } catch (e) {
+                                            if (mounted) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text('Erreur: $e'),
+                                                ),
+                                              );
+                                            }
+                                          }
+                                        }
+                                      },
+                                      icon: const Icon(Icons.delete_outline),
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ],
                           ),
                         ),
