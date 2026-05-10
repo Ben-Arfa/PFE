@@ -13,7 +13,6 @@ import '../../../saisie_quotidienne/data/services/daily_entry_service.dart';
 import '../../../saisie_quotidienne/domain/entities/daily_entry.dart';
 import '../../data/repositories/lot_traceability_repository_impl.dart';
 import '../../data/services/lot_traceability_service.dart';
-import '../../domain/entities/create_lot_history_event_input.dart';
 import '../../domain/entities/lot_history_event.dart';
 
 class LotHistoryScreen extends StatelessWidget {
@@ -27,69 +26,6 @@ class LotHistoryScreen extends StatelessWidget {
   bool get _isLayer {
     final name = lot.poultryTypeName.toLowerCase();
     return name.contains('ponde') || name.contains('pondeuse');
-  }
-
-  Future<void> _addEvent(BuildContext context) async {
-    final typeCtrl = TextEditingController(text: 'vaccination');
-    final titleCtrl = TextEditingController();
-    final descriptionCtrl = TextEditingController();
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Ajouter un évènement'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: typeCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Type (vaccination, traitement, alerte, note)',
-                ),
-              ),
-              TextField(
-                controller: titleCtrl,
-                decoration: const InputDecoration(labelText: 'Titre'),
-              ),
-              TextField(
-                controller: descriptionCtrl,
-                decoration: const InputDecoration(labelText: 'Détails'),
-                maxLines: 3,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Annuler'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Ajouter'),
-          ),
-        ],
-      ),
-    );
-
-    if (result != true) return;
-
-    await _eventsRepo.addEvent(
-      CreateLotHistoryEventInput(
-        lotId: lot.id,
-        type: typeCtrl.text.trim().isEmpty ? 'note' : typeCtrl.text.trim(),
-        title: titleCtrl.text.trim().isEmpty
-            ? 'Évènement lot'
-            : titleCtrl.text.trim(),
-        description: descriptionCtrl.text.trim(),
-        eventAt: DateTime.now(),
-      ),
-    );
-
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Évènement ajouté')));
   }
 
   Future<void> _downloadLotReportPdf(BuildContext context) async {
@@ -285,13 +221,6 @@ class LotHistoryScreen extends StatelessWidget {
           ),
         ],
       ),
-      floatingActionButton: lot.isActive
-          ? FloatingActionButton.extended(
-              onPressed: () => _addEvent(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Évènement'),
-            )
-          : null,
       body: StreamBuilder<List<DailyEntry>>(
         stream: _entriesRepo.watchEntriesForLot(lot.id),
         builder: (context, entriesSnapshot) {
@@ -305,7 +234,9 @@ class LotHistoryScreen extends StatelessWidget {
 
               final entries = entriesSnapshot.data ?? const <DailyEntry>[];
               final events = eventsSnapshot.data ?? const <LotHistoryEvent>[];
-              final timeline = <_TimelineRow>[
+
+              // Build raw timeline and sort by timestamp
+              final timelineList = <_TimelineRow>[
                 _TimelineRow(
                   timestamp: lot.entryDate,
                   title: 'Entrée du lot',
@@ -338,9 +269,36 @@ class LotHistoryScreen extends StatelessWidget {
                     subtitle: lot.closureReason ?? 'Lot clôturé',
                     icon: Icons.lock_outline,
                   ),
-              ]..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+              ];
 
-              if (timeline.isEmpty) {
+              timelineList.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+              // Remove duplicates. For entry/closure events we dedupe by date
+              // (same day = same event), for others we dedupe by second-level
+              // timestamp to tolerate tiny differences between sources.
+              final filtered = <_TimelineRow>[];
+              final seen = <String>{};
+              for (final row in timelineList) {
+                final dt = row.timestamp.toDate();
+                String key;
+                if (row.title == 'Entrée du lot' ||
+                    row.title == 'Clôture du lot') {
+                  final y = dt.year.toString().padLeft(4, '0');
+                  final m = dt.month.toString().padLeft(2, '0');
+                  final d = dt.day.toString().padLeft(2, '0');
+                  key = '${row.title}|$y-$m-$d';
+                } else {
+                  final seconds = dt.toUtc().millisecondsSinceEpoch ~/ 1000;
+                  key = '${row.title}|$seconds';
+                }
+
+                if (!seen.contains(key)) {
+                  seen.add(key);
+                  filtered.add(row);
+                }
+              }
+
+              if (filtered.isEmpty) {
                 return const Center(
                   child: Text('Aucun historique disponible.'),
                 );
@@ -385,7 +343,7 @@ class LotHistoryScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 12),
-                  ...timeline.map(
+                  ...filtered.map(
                     (item) => Card(
                       child: ListTile(
                         leading: CircleAvatar(child: Icon(item.icon, size: 18)),
