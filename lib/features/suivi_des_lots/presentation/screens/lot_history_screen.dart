@@ -309,6 +309,10 @@ class LotHistoryScreen extends StatelessWidget {
                 children: [
                   if (lot.closedAt != null)
                     Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
@@ -316,23 +320,96 @@ class LotHistoryScreen extends StatelessWidget {
                           children: [
                             const Text(
                               'Bilan de clôture',
-                              style: TextStyle(fontWeight: FontWeight.w700),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                const Icon(Icons.pets, size: 18),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Sujets sortis: ${lot.closedSubjectsOut ?? '-'}',
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 8),
-                            Text(
-                              'Sujets sortis: ${lot.closedSubjectsOut ?? '-'}',
+                            Row(
+                              children: [
+                                const Icon(Icons.info_outline, size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Motif: ${lot.closureReason ?? '-'}',
+                                  ),
+                                ),
+                              ],
                             ),
-                            Text('Motif: ${lot.closureReason ?? '-'}'),
-                            if (lot.finalAvgWeightKg != null)
-                              Text(
-                                'Poids moyen final: ${lot.finalAvgWeightKg!.toStringAsFixed(2)} kg',
+                            if (lot.finalAvgWeightKg != null) ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.monitor_weight_outlined,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Poids moyen final: ${lot.finalAvgWeightKg!.toStringAsFixed(2)} kg',
+                                  ),
+                                ],
                               ),
-                            if (lot.totalEggProduction != null)
-                              Text(
-                                'Production totale d\'œufs: ${lot.totalEggProduction}',
+                            ],
+                            if (lot.totalEggProduction != null) ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(Icons.egg_outlined, size: 18),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Production totale d\'œufs: ${lot.totalEggProduction}',
+                                  ),
+                                ],
                               ),
-                            if (lot.closureSummary != null)
-                              Text('Résumé: ${lot.closureSummary}'),
+                            ],
+                            if (lot.closureSummary != null) ...[
+                              const SizedBox(height: 12),
+                              const Text(
+                                'Résumé',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 8),
+                              Builder(
+                                builder: (ctx) {
+                                  final summary = lot.closureSummary;
+                                  if (summary is Map) {
+                                    final entries = (summary as Map).entries
+                                        .map(
+                                          (e) => MapEntry(
+                                            e.key.toString(),
+                                            e.value,
+                                          ),
+                                        )
+                                        .toList();
+                                    return Wrap(
+                                      spacing: 8,
+                                      runSpacing: 6,
+                                      children: entries.map((e) {
+                                        return Chip(
+                                          label: Text('${e.key}: ${e.value}'),
+                                        );
+                                      }).toList(),
+                                    );
+                                  }
+
+                                  // Fallback for string or other types
+                                  return Text(summary.toString());
+                                },
+                              ),
+                            ],
                           ],
                         ),
                       ),
