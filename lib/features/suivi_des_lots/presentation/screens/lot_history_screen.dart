@@ -93,6 +93,30 @@ class LotHistoryScreen extends StatelessWidget {
         ),
     ]..sort((a, b) => a.date.compareTo(b.date));
 
+    // Dedupe timeline entries for PDF (same rules as on-screen):
+    // - For entry/closure events, consider same day duplicates
+    // - For others, consider same-second duplicates
+    final filteredTimeline = <_PdfTimelineRow>[];
+    final seenPdf = <String>{};
+    for (final row in timeline) {
+      final dt = row.date;
+      String key;
+      if (row.title == 'Entrée du lot' || row.title == 'Clôture du lot') {
+        final y = dt.year.toString().padLeft(4, '0');
+        final m = dt.month.toString().padLeft(2, '0');
+        final d = dt.day.toString().padLeft(2, '0');
+        key = '${row.title}|$y-$m-$d';
+      } else {
+        final seconds = dt.toUtc().millisecondsSinceEpoch ~/ 1000;
+        key = '${row.title}|$seconds';
+      }
+
+      if (!seenPdf.contains(key)) {
+        seenPdf.add(key);
+        filteredTimeline.add(row);
+      }
+    }
+
     final currentBirds = lot.currentBirdCount;
     final mortalityCount = (lot.initialBirdCount - currentBirds).clamp(
       0,
@@ -140,37 +164,14 @@ class LotHistoryScreen extends StatelessWidget {
             pw.Bullet(
               text: 'Production totale d\'oeufs: ${lot.totalEggProduction}',
             ),
-          if (lot.closureSummary != null)
-            () {
-              final cs = lot.closureSummary;
-              if (cs is Map && (cs as Map).isNotEmpty) {
-                final map = cs as Map;
-                return pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      'Résumé',
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                    ),
-                    pw.SizedBox(height: 6),
-                    ...map.entries.map((e) {
-                      final k = _translateKeyFr(e.key.toString());
-                      final v = e.value?.toString() ?? '-';
-                      return pw.Bullet(text: '$k: $v');
-                    }),
-                  ],
-                );
-              }
-
-              return pw.Text('Résumé: ${cs.toString()}');
-            }(),
+          // Removed 'Résumé' section per UI request (now only on-screen)
           pw.SizedBox(height: 12),
           pw.Text(
             'Journal chronologique',
             style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
           ),
           pw.SizedBox(height: 6),
-          ...timeline.map(
+          ...filteredTimeline.map(
             (row) => pw.Container(
               margin: const pw.EdgeInsets.only(bottom: 6),
               padding: const pw.EdgeInsets.all(8),
@@ -443,25 +444,6 @@ class LotHistoryScreen extends StatelessWidget {
       default:
         return Icons.note_alt_outlined;
     }
-  }
-
-  String _translateKeyFr(String key) {
-    const translations = {
-      'initialCount': 'Nombre initial',
-      'finalCount': 'Nombre final',
-      'mortality': 'Mortalité',
-      'mortalityRate': 'Taux de mortalité',
-      'avgWeight': 'Poids moyen',
-      'totalEggs': 'Total œufs',
-      'feedConsumption': 'Consommation aliment',
-      'duration': 'Durée',
-      'startDate': 'Date début',
-      'endDate': 'Date fin',
-      'subjectsOut': 'Sujets sortis',
-      'reason': 'Motif',
-      'notes': 'Remarques',
-    };
-    return translations[key] ?? key;
   }
 
   String _translateSummaryKey(String key) {
