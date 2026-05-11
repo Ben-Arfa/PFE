@@ -416,60 +416,21 @@ class LotHistoryScreen extends StatelessWidget {
                                       runSpacing: 6,
                                       children: map.entries.map((e) {
                                         final rawKey = e.key.toString();
-                                        final key = _translateKeyFr(rawKey);
-                                        final value = e.value;
-
-                                        if (value is Map) {
-                                          final inner =
-                                              value as Map<dynamic, dynamic>;
-                                          return Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Chip(label: Text(key)),
-                                              const SizedBox(height: 6),
-                                              Wrap(
-                                                spacing: 6,
-                                                runSpacing: 6,
-                                                children: inner.entries.map((
-                                                  ie,
-                                                ) {
-                                                  final ik = _translateKeyFr(
-                                                    ie.key.toString(),
-                                                  );
-                                                  final iv =
-                                                      ie.value?.toString() ??
-                                                      '-';
-                                                  return Chip(
-                                                    label: Text('$ik: $iv'),
-                                                  );
-                                                }).toList(),
-                                              ),
-                                            ],
-                                          );
-                                        }
-
-                                        if (value is Iterable) {
-                                          final list = value.cast().toList();
-                                          return Chip(
-                                            label: Text(
-                                              '$key: ${list.join(", ")}',
-                                            ),
-                                          );
-                                        }
-
+                                        final key = _translateSummaryKey(
+                                          rawKey,
+                                        );
+                                        final value = _formatSummaryValue(
+                                          e.value,
+                                        );
                                         return Chip(
-                                          label: Text(
-                                            '$key: ${value?.toString() ?? '-'}',
-                                          ),
+                                          label: Text('$key: $value'),
                                         );
                                       }).toList(),
                                     );
                                   }
 
                                   // Fallback for string or other types
-                                  return Text(summary?.toString() ?? '-');
+                                  return Text(_formatSummaryValue(summary));
                                 },
                               ),
                             ],
@@ -538,6 +499,75 @@ class LotHistoryScreen extends StatelessWidget {
       'notes': 'Remarques',
     };
     return translations[key] ?? key;
+  }
+
+  String _translateSummaryKey(String key) {
+    const translations = {
+      'totalEggProduction': 'Production totale d\'œufs',
+      'lotIdentifier': 'Identifiant du lot',
+      'closedBirdCount': 'Sujets sortis',
+      'closureDate': 'Date de clôture',
+      'finalAvgWeightKg': 'Poids moyen final',
+      'lotId': 'Identifiant du lot',
+      'closureReason': 'Motif',
+      'entryDate': 'Date d\'entrée',
+      'startDate': 'Date de début',
+      'endDate': 'Date de fin',
+      'mortalityRate': 'Taux de mortalité',
+      'mortalityCount': 'Nombre de morts',
+      'feedConsumption': 'Consommation aliment',
+      'initialBirdCount': 'Sujets initiaux',
+      'currentBirdCount': 'Sujets actuels',
+    };
+
+    final translated = translations[key];
+    if (translated != null) {
+      return translated;
+    }
+
+    final normalized = key
+        .replaceAll(RegExp(r'[_-]+'), ' ')
+        .replaceAllMapped(
+          RegExp(r'([a-z])([A-Z])'),
+          (match) => '${match[1]} ${match[2]}',
+        )
+        .trim();
+
+    if (normalized.isEmpty) {
+      return key;
+    }
+
+    return normalized[0].toUpperCase() + normalized.substring(1);
+  }
+
+  String _formatSummaryValue(dynamic value) {
+    if (value == null) {
+      return '-';
+    }
+
+    if (value is Timestamp) {
+      return _formatDate(value.toDate());
+    }
+
+    if (value is DateTime) {
+      return _formatDate(value);
+    }
+
+    if (value is Map) {
+      return value.entries
+          .map((entry) {
+            final entryKey = _translateSummaryKey(entry.key.toString());
+            final entryValue = _formatSummaryValue(entry.value);
+            return '$entryKey: $entryValue';
+          })
+          .join(' · ');
+    }
+
+    if (value is Iterable) {
+      return value.map((item) => _formatSummaryValue(item)).join(', ');
+    }
+
+    return value.toString();
   }
 }
 
