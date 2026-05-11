@@ -348,44 +348,6 @@ class LotHistoryScreen extends StatelessWidget {
                                 fontSize: 16,
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                //const Icon(Icons.pets, size: 18),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Sujets sortis: ${lot.closedSubjectsOut ?? '-'}',
-                                  style: const TextStyle(fontSize: 14),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                const Icon(Icons.info_outline, size: 18),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Motif: ${lot.closureReason ?? '-'}',
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (lot.finalAvgWeightKg != null) ...[
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.monitor_weight_outlined,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Poids moyen final: ${lot.finalAvgWeightKg!.toStringAsFixed(2)} kg',
-                                  ),
-                                ],
-                              ),
-                            ],
                             if (lot.totalEggProduction != null) ...[
                               const SizedBox(height: 8),
                               Row(
@@ -400,11 +362,6 @@ class LotHistoryScreen extends StatelessWidget {
                             ],
                             if (lot.closureSummary != null) ...[
                               const SizedBox(height: 12),
-                              const Text(
-                                'Résumé',
-                                style: TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                              const SizedBox(height: 8),
                               Builder(
                                 builder: (ctx) {
                                   final summary = lot.closureSummary;
