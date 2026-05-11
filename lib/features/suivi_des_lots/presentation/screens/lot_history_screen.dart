@@ -409,27 +409,67 @@ class LotHistoryScreen extends StatelessWidget {
                                 builder: (ctx) {
                                   final summary = lot.closureSummary;
                                   if (summary is Map) {
-                                    final entries = (summary as Map).entries
-                                        .map(
-                                          (e) => MapEntry(
-                                            _translateKeyFr(e.key.toString()),
-                                            e.value,
-                                          ),
-                                        )
-                                        .toList();
+                                    final map =
+                                        summary as Map<dynamic, dynamic>;
                                     return Wrap(
                                       spacing: 8,
                                       runSpacing: 6,
-                                      children: entries.map((e) {
+                                      children: map.entries.map((e) {
+                                        final rawKey = e.key.toString();
+                                        final key = _translateKeyFr(rawKey);
+                                        final value = e.value;
+
+                                        if (value is Map) {
+                                          final inner =
+                                              value as Map<dynamic, dynamic>;
+                                          return Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Chip(label: Text(key)),
+                                              const SizedBox(height: 6),
+                                              Wrap(
+                                                spacing: 6,
+                                                runSpacing: 6,
+                                                children: inner.entries.map((
+                                                  ie,
+                                                ) {
+                                                  final ik = _translateKeyFr(
+                                                    ie.key.toString(),
+                                                  );
+                                                  final iv =
+                                                      ie.value?.toString() ??
+                                                      '-';
+                                                  return Chip(
+                                                    label: Text('$ik: $iv'),
+                                                  );
+                                                }).toList(),
+                                              ),
+                                            ],
+                                          );
+                                        }
+
+                                        if (value is Iterable) {
+                                          final list = value.cast().toList();
+                                          return Chip(
+                                            label: Text(
+                                              '$key: ${list.join(", ")}',
+                                            ),
+                                          );
+                                        }
+
                                         return Chip(
-                                          label: Text('${e.key}: ${e.value}'),
+                                          label: Text(
+                                            '$key: ${value?.toString() ?? '-'}',
+                                          ),
                                         );
                                       }).toList(),
                                     );
                                   }
 
                                   // Fallback for string or other types
-                                  return Text(summary.toString());
+                                  return Text(summary?.toString() ?? '-');
                                 },
                               ),
                             ],
