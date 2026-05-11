@@ -91,7 +91,28 @@ class LotHistoryScreen extends StatelessWidget {
           title: 'Clôture du lot',
           details: lot.closureReason ?? 'Lot clôturé',
         ),
-    ]..sort((a, b) => a.date.compareTo(b.date));
+    ];
+
+    // Order timeline for PDF: force 'Entrée du lot' first, 'Clôture du lot' last,
+    // others in-between by date.
+    timeline.sort((a, b) {
+      int pa() {
+        if (a.title == 'Entrée du lot') return -1;
+        if (a.title == 'Clôture du lot') return 1;
+        return 0;
+      }
+
+      int pb() {
+        if (b.title == 'Entrée du lot') return -1;
+        if (b.title == 'Clôture du lot') return 1;
+        return 0;
+      }
+
+      final ra = pa();
+      final rb = pb();
+      if (ra != rb) return ra - rb;
+      return a.date.compareTo(b.date);
+    });
 
     // Dedupe timeline entries for PDF (same rules as on-screen):
     // - For entry/closure events, consider same day duplicates
@@ -117,11 +138,11 @@ class LotHistoryScreen extends StatelessWidget {
       }
     }
 
-    final currentBirds = lot.currentBirdCount;
-    final mortalityCount = (lot.initialBirdCount - currentBirds).clamp(
-      0,
-      lot.initialBirdCount,
-    );
+    // Compute mortality based on daily entries (more reliable than currentBirdCount)
+    final mortalityCount = entries.fold<int>(0, (s, e) => s + e.deathsToday);
+    final subjectsOut = lot.closedSubjectsOut ?? 0;
+    var currentBirds = lot.initialBirdCount - mortalityCount - subjectsOut;
+    if (currentBirds < 0) currentBirds = 0;
     final mortalityRate = lot.initialBirdCount <= 0
         ? 0.0
         : (mortalityCount / lot.initialBirdCount) * 100;
