@@ -371,18 +371,24 @@ class LotHistoryScreen extends StatelessWidget {
                                     return Wrap(
                                       spacing: 8,
                                       runSpacing: 6,
-                                      children: map.entries.map((e) {
-                                        final rawKey = e.key.toString();
-                                        final key = _translateSummaryKey(
-                                          rawKey,
-                                        );
-                                        final value = _formatSummaryValue(
-                                          e.value,
-                                        );
-                                        return Chip(
-                                          label: Text('$key: $value'),
-                                        );
-                                      }).toList(),
+                                      children: map.entries
+                                          .map((e) {
+                                            final rawKey = e.key.toString();
+                                            if (_shouldHideSummaryKey(rawKey)) {
+                                              return null;
+                                            }
+                                            final key = _translateSummaryKey(
+                                              rawKey,
+                                            );
+                                            final value = _formatSummaryValue(
+                                              e.value,
+                                            );
+                                            return Chip(
+                                              label: Text('$key: $value'),
+                                            );
+                                          })
+                                          .whereType<Widget>()
+                                          .toList(),
                                     );
                                   }
 
@@ -495,6 +501,11 @@ class LotHistoryScreen extends StatelessWidget {
     }
 
     return normalized[0].toUpperCase() + normalized.substring(1);
+  }
+
+  bool _shouldHideSummaryKey(String key) {
+    const hiddenKeys = {'lotId', 'subjectsOut'};
+    return hiddenKeys.contains(key);
   }
 
   String _formatSummaryValue(dynamic value) {
