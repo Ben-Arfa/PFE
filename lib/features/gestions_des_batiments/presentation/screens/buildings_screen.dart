@@ -3,6 +3,7 @@ import '../../data/repositories/building_repository_impl.dart';
 import '../../data/services/building_service.dart';
 import '../../domain/entities/building.dart';
 import 'building_form_screen.dart';
+import '../widgets/building_state_dialog.dart';
 
 class BuildingsScreen extends StatefulWidget {
   const BuildingsScreen({super.key});
@@ -32,6 +33,13 @@ class _BuildingsScreenState extends State<BuildingsScreen> {
         builder: (_) =>
             BuildingFormScreen(repo: _repo, initialBuilding: building),
       ),
+    );
+  }
+
+  void _openState(Building building) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => BuildingStateDialog(building: building),
     );
   }
 
@@ -236,16 +244,22 @@ class _BuildingsScreenState extends State<BuildingsScreen> {
                                   onSelected: (value) {
                                     if (value == 'edit') {
                                       _openEdit(building);
+                                    } else if (value == 'state') {
+                                      _openState(building);
                                     } else {
                                       _delete(building);
                                     }
                                   },
-                                  itemBuilder: (context) => const [
-                                    PopupMenuItem(
+                                  itemBuilder: (context) => [
+                                    const PopupMenuItem(
+                                      value: 'state',
+                                      child: Text('Voir l\'état'),
+                                    ),
+                                    const PopupMenuItem(
                                       value: 'edit',
                                       child: Text('Modifier'),
                                     ),
-                                    PopupMenuItem(
+                                    const PopupMenuItem(
                                       value: 'delete',
                                       child: Text('Supprimer'),
                                     ),

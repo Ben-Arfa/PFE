@@ -87,4 +87,91 @@ class BuildingService {
 
     await _userBuildings().doc(id).delete();
   }
+
+  /// Récupère les dernières mesures (température, humidité) agrégées
+  /// pour tous les capteurs associés au bâtiment.
+  Future<Map<String, double?>> getLatestSensorsForBuilding(
+    String buildingId,
+  ) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) throw Exception('User not authenticated');
+
+    final devicesSnap = await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('iot_devices')
+        .where('buildingId', isEqualTo: buildingId)
+        .get();
+
+    if (devicesSnap.docs.isEmpty) {
+      return {'temperature': null, 'humidity': null};
+    }
+
+    double tempSum = 0;
+    int tempCount = 0;
+    double humSum = 0;
+    int humCount = 0;
+
+    for (final dev in devicesSnap.docs) {
+      try {
+        var readingsRef = dev.reference.collection('readings');
+        var latest = await readingsRef
+            .orderBy('timestamp', descending: true)
+            .limit(1)
+            .get();
+        if (latest.docs.isEmpty) {
+          // try fallback
+          latest = await readingsRef
+              .orderBy('createdAt', descending: true)
+              .limit(1)
+              .get();
+        }
+
+        if (latest.docs.isNotEmpty) {
+          final data = latest.docs.first.data();
+          if (data['temperature'] != null) {
+            tempSum += (data['temperature'] as num).toDouble();
+            tempCount++;
+          }
+          if (data['humidity'] != null) {
+            humSum += (data['humidity'] as num).toDouble();
+            humCount++;
+          }
+        }
+      } catch (_) {
+        // ignore per-device failures
+      }
+    }
+
+    return {
+      'temperature': tempCount > 0 ? tempSum / tempCount : null,
+      'humidity': humCount > 0 ? humSum / humCount : null,
+    };
+  }
+
+  /// Lit l'état des contrôles (ventilation / chauffage) stockés dans le document du bâtiment.
+  Future<Map<String, dynamic>> getBuildingControls(String buildingId) async {
+    final doc = await _userBuildings().doc(buildingId).get();
+    final data = doc.data() ?? {};
+    return {
+      'ventilationOn': data['ventilationOn'] == true,
+      'heatingOn': data['heatingOn'] == true,
+    };
+  }
+
+  /// Active/désactive la ventilation pour le bâtiment.
+  Future<void> setVentilation(String buildingId, bool enabled) async {
+    await _userBuildings().doc(buildingId).update({
+      'ventilationOn': enabled,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Active/désactive le chauffage pour le bâtiment.
+  Future<void> setHeating(String buildingId, bool enabled) async {
+    await _userBuildings().doc(buildingId).update({
+      'heatingOn': enabled,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
 }

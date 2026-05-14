@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kiwo/app/di/service_locator.dart';
 import 'package:kiwo/features/home/presentation/screens/dashboard_screen.dart';
 import 'package:kiwo/features/home/presentation/screens/elevage_screen.dart';
-import 'package:kiwo/features/home/presentation/screens/iot_objects_screen.dart';
+import 'package:kiwo/features/gestion_des_iot_devices/presentation/screens/index.dart';
 import 'package:kiwo/features/profile/presentation/screens/profile_screen.dart';
 import 'package:kiwo/shared/presentation/theme/app_colors.dart';
 import 'package:kiwo/shared/presentation/theme/kiwo_theme.dart';

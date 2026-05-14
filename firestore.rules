@@ -80,6 +80,16 @@ service cloud.firestore {
       allow read, write: if isAdmin() || isOwner(userId);
     }
 
+    // Appareils IoT et leurs lectures de capteurs.
+    match /users/{userId}/iot_devices/{deviceId} {
+      allow read, write: if isAdmin() || isOwner(userId);
+      
+      // Lectures des capteurs pour chaque appareil.
+      match /readings/{readingId} {
+        allow read, write: if isAdmin() || isOwner(userId);
+      }
+    }
+
     // Automatisation IoT appliquee aux batiments ou lots.
     match /users/{userId}/iotAutomations/{automationId} {
       allow read, write: if isAdmin() || isOwner(userId);
