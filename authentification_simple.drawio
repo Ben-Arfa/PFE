@@ -1,0 +1,132 @@
+<mxfile host="app.diagrams.net" modified="2026-05-19T00:00:00.000Z" agent="Codex" version="24.7.17" type="device">
+  <diagram id="kiwo-auth-simple" name="Authentification simple">
+    <mxGraphModel dx="1400" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="1250" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="title" value="Authentification réussie - Kiwo" style="text;html=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=20;align=center;verticalAlign=middle;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="300" y="20" width="520" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="u" value="Utilisateur" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="73" y="82" width="70" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="p" value="Presentation" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="225" y="90" width="130" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="d" value="Domaine" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="405" y="90" width="130" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="data" value="Data" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="585" y="90" width="130" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="s" value="Service externe&#xa;Firebase" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="775" y="90" width="150" height="45" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="lu" value="" style="endArrow=none;html=1;rounded=0;dashed=1;strokeColor=#666666;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="110" y="170" as="sourcePoint"/><mxPoint x="110" y="1160" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="lp" value="" style="endArrow=none;html=1;rounded=0;dashed=1;strokeColor=#666666;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="290" y="130" as="sourcePoint"/><mxPoint x="290" y="1160" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="ld" value="" style="endArrow=none;html=1;rounded=0;dashed=1;strokeColor=#666666;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="470" y="130" as="sourcePoint"/><mxPoint x="470" y="1160" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="ldata" value="" style="endArrow=none;html=1;rounded=0;dashed=1;strokeColor=#666666;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="650" y="130" as="sourcePoint"/><mxPoint x="650" y="1160" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="ls" value="" style="endArrow=none;html=1;rounded=0;dashed=1;strokeColor=#666666;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="850" y="135" as="sourcePoint"/><mxPoint x="850" y="1160" as="targetPoint"/></mxGeometry>
+        </mxCell>
+
+        <mxCell id="m1" value="1. Ouvre l'application" style="endArrow=block;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="110" y="190" as="sourcePoint"/><mxPoint x="290" y="190" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="m2" value="2. Initialise Firebase et lance MyApp" style="endArrow=block;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="290" y="230" as="sourcePoint"/><mxPoint x="850" y="230" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="r2" value="Initialisation OK" style="endArrow=open;html=1;rounded=0;dashed=1;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="850" y="260" as="sourcePoint"/><mxPoint x="290" y="260" as="targetPoint"/></mxGeometry>
+        </mxCell>
+
+        <mxCell id="m3" value="3. watchAuthentication()" style="endArrow=block;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="290" y="310" as="sourcePoint"/><mxPoint x="470" y="310" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="m4" value="4. watchAuthentication()" style="endArrow=block;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="470" y="345" as="sourcePoint"/><mxPoint x="650" y="345" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="m5" value="5. authStateChanges()" style="endArrow=block;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="650" y="380" as="sourcePoint"/><mxPoint x="850" y="380" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="r5" value="Etat non connecté" style="endArrow=open;html=1;rounded=0;dashed=1;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="850" y="415" as="sourcePoint"/><mxPoint x="290" y="415" as="targetPoint"/></mxGeometry>
+        </mxCell>
+
+        <mxCell id="opt" value="opt Utilisateur non connecté" style="shape=umlFrame;whiteSpace=wrap;html=1;pointerEvents=0;container=1;recursiveResize=0;fillColor=none;strokeColor=#000000;fontStyle=1;align=left;spacingLeft=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="205" y="445" width="260" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="m6" value="6. Affiche LoginScreen" style="endArrow=block;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="290" y="485" as="sourcePoint"/><mxPoint x="340" y="485" as="targetPoint"/><Array as="points"><mxPoint x="340" y="505"/><mxPoint x="290" y="505"/></Array></mxGeometry>
+        </mxCell>
+
+        <mxCell id="m7" value="7. Saisit email et mot de passe" style="endArrow=block;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="110" y="555" as="sourcePoint"/><mxPoint x="290" y="555" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="m8" value="8. Clique &quot;Se connecter&quot;" style="endArrow=block;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="110" y="595" as="sourcePoint"/><mxPoint x="290" y="595" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="m9" value="9. Valide formulaire et affiche chargement" style="endArrow=block;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="290" y="635" as="sourcePoint"/><mxPoint x="340" y="635" as="targetPoint"/><Array as="points"><mxPoint x="340" y="660"/><mxPoint x="290" y="660"/></Array></mxGeometry>
+        </mxCell>
+
+        <mxCell id="m10" value="10. signIn(email, motDePasse)" style="endArrow=block;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="290" y="705" as="sourcePoint"/><mxPoint x="470" y="705" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="m11" value="11. signIn(email, motDePasse)" style="endArrow=block;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="470" y="740" as="sourcePoint"/><mxPoint x="650" y="740" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="m12" value="12. signInWithEmailAndPassword(...)" style="endArrow=block;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="650" y="775" as="sourcePoint"/><mxPoint x="850" y="775" as="targetPoint"/></mxGeometry>
+        </mxCell>
+
+        <mxCell id="alt_err" value="alt Erreur / identifiants invalides ou succès" style="shape=umlFrame;whiteSpace=wrap;html=1;pointerEvents=0;container=1;recursiveResize=0;fillColor=none;strokeColor=#000000;fontStyle=1;align=left;spacingLeft=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="200" y="805" width="760" height="135" as="geometry"/>
+        </mxCell>
+        <mxCell id="err" value="Erreur : message d'erreur affiché" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="225" y="840" width="220" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="r12" value="UserCredential / succès" style="endArrow=open;html=1;rounded=0;dashed=1;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="850" y="900" as="sourcePoint"/><mxPoint x="290" y="900" as="targetPoint"/></mxGeometry>
+        </mxCell>
+
+        <mxCell id="m13" value="13. authStateChanges : utilisateur connecté" style="endArrow=open;html=1;rounded=0;dashed=1;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="850" y="965" as="sourcePoint"/><mxPoint x="290" y="965" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="m14" value="14. Charger profil utilisateur" style="endArrow=block;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="290" y="1010" as="sourcePoint"/><mxPoint x="650" y="1010" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="m15" value="15. Lire users/{uid}" style="endArrow=block;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="650" y="1045" as="sourcePoint"/><mxPoint x="850" y="1045" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="r15" value="UserProfile" style="endArrow=open;html=1;rounded=0;dashed=1;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="850" y="1080" as="sourcePoint"/><mxPoint x="290" y="1080" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="m16" value="16. resolveRole(profilUtilisateur)" style="endArrow=block;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="290" y="1120" as="sourcePoint"/><mxPoint x="470" y="1120" as="targetPoint"/></mxGeometry>
+        </mxCell>
+        <mxCell id="r16" value="role" style="endArrow=open;html=1;rounded=0;dashed=1;strokeColor=#000000;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="470" y="1150" as="sourcePoint"/><mxPoint x="290" y="1150" as="targetPoint"/></mxGeometry>
+        </mxCell>
+
+        <mxCell id="alt_role" value="alt Routage selon le rôle" style="shape=umlFrame;whiteSpace=wrap;html=1;pointerEvents=0;container=1;recursiveResize=0;fillColor=none;strokeColor=#000000;fontStyle=1;align=left;spacingLeft=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="200" y="1175" width="280" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="route" value="admin : AdminDashboardScreen&#xa;user : HomeScreen" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="235" y="1200" width="210" height="35" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

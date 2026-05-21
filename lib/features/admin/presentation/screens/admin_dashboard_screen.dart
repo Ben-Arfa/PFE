@@ -197,8 +197,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       backgroundColor: t.cardColor,
                       icon: Icons.list_alt_rounded,
                       title: 'Consulter la liste',
-                      description:
-                          'Voir tous les comptes en cartes independantes',
+                      description: 'Voir tous les comptes ',
                       onTap: () => setState(() => _accountsMode = 'list'),
                       iconColor: AppColors.green,
                       iconSize: 48,

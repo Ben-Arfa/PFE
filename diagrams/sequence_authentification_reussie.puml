@@ -1,0 +1,115 @@
+@startuml
+title S'authentifier - Flux reussi
+
+skinparam strictuml true
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam ParticipantPadding 45
+skinparam BoxPadding 12
+skinparam ArrowThickness 1.2
+skinparam LifeLineBorderColor #2F3A45
+skinparam LifeLineBackgroundColor #FFFFFF
+skinparam SequenceGroupBorderColor #2F3A45
+skinparam SequenceGroupBackgroundColor #FFFFFF
+skinparam ParticipantBackgroundColor #6FA8DC
+skinparam ParticipantBorderColor #2F3A45
+skinparam ParticipantFontStyle bold
+
+actor "Utilisateur" as Utilisateur
+participant "Presentation" as Presentation
+participant "Domaine" as Domaine
+participant "Data" as Data
+participant "Service externe" as Externe
+
+== Initialisation de l'application ==
+
+Presentation -> Externe : Firebase.initializeApp()
+activate Externe
+Externe --> Presentation : initialisationFirebaseOK
+deactivate Externe
+
+Presentation -> Presentation : runApp(MyApp)
+Presentation -> Presentation : afficherRoute("/")
+Presentation -> Presentation : monterAuthWrapper()
+
+== Ecoute continue de l'etat d'authentification ==
+
+Presentation -> Domaine : watchAuthentication()
+activate Domaine
+Domaine -> Data : watchAuthentication()
+activate Data
+Data -> Externe : authStateChanges()
+activate Externe
+Externe --> Data : fluxUtilisateur
+deactivate Externe
+Data --> Domaine : fluxAuthentification
+deactivate Data
+Domaine --> Presentation : etatAuthentification
+deactivate Domaine
+
+opt [utilisateur non connecte]
+  Presentation -> Presentation : afficherLoginScreen()
+end
+
+== Saisie et validation du formulaire ==
+
+Utilisateur -> Presentation : saisirIdentifiants(email, motDePasse)
+Utilisateur -> Presentation : cliquerSeConnecter()
+Presentation -> Presentation : validerFormulaire()
+Presentation -> Presentation : afficherChargement()
+
+== Authentification Firebase reussie ==
+
+Presentation -> Domaine : signIn(email, motDePasse)
+activate Domaine
+Domaine -> Data : signIn(email, motDePasse)
+activate Data
+Data -> Externe : signInWithEmailAndPassword(email, motDePasse)
+activate Externe
+Externe --> Data : userCredential
+deactivate Externe
+Data --> Domaine : succes
+deactivate Data
+Domaine --> Presentation : succes
+deactivate Domaine
+Presentation -> Presentation : masquerChargement()
+
+== Notification de session connectee ==
+
+Externe ->> Presentation : authStateChanges(userConnecte)
+Presentation -> Presentation : reconstruireAuthWrapper()
+
+== Recuperation du profil utilisateur ==
+
+Presentation -> Domaine : watchCurrentUserProfile()
+activate Domaine
+Domaine -> Data : watchCurrentUserProfile()
+activate Data
+Data -> Externe : users/{uid}.snapshots()
+activate Externe
+Externe --> Data : documentUtilisateur
+deactivate Externe
+Data -> Data : UserProfile.fromMap(documentUtilisateur)
+Data --> Domaine : profilUtilisateur
+deactivate Data
+Domaine --> Presentation : profilUtilisateur
+deactivate Domaine
+
+== Resolution du role et routage ==
+
+Presentation -> Domaine : resolveRole(profilUtilisateur)
+activate Domaine
+Domaine -> Data : resolveRole(profilUtilisateur)
+activate Data
+Data --> Domaine : role
+deactivate Data
+Domaine --> Presentation : role
+deactivate Domaine
+
+alt [role = admin]
+  Presentation --> Utilisateur : afficherAdminDashboardScreen()
+else [role = user]
+  Presentation --> Utilisateur : afficherHomeScreen()
+end
+
+@enduml

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:riverpod/riverpod.dart';
 import '../../domain/entities/index.dart';
 import '../../domain/repositories/iot_device_repository.dart';
+import '../../data/services/esp32_dht22_service.dart';
 import '../../data/datasources/iot_device_remote_data_source.dart';
 import '../../data/repositories/iot_device_repository_impl.dart';
 
@@ -28,6 +29,10 @@ final iotDeviceRemoteDataSourceProvider = Provider<IotDeviceRemoteDataSource>((
 final iotDeviceRepositoryProvider = Provider<IotDeviceRepository>((ref) {
   final dataSource = ref.watch(iotDeviceRemoteDataSourceProvider);
   return IotDeviceRepositoryImpl(dataSource);
+});
+
+final esp32Dht22ServiceProvider = Provider<Esp32Dht22Service>((ref) {
+  return Esp32Dht22Service();
 });
 
 // Watch all devices
@@ -136,4 +141,39 @@ final recordSensorReadingProvider =
     StateNotifierProvider<RecordReadingNotifier, AsyncValue<void>>((ref) {
       final repository = ref.watch(iotDeviceRepositoryProvider);
       return RecordReadingNotifier(repository);
+    });
+
+class SyncEsp32ReadingNotifier extends StateNotifier<AsyncValue<void>> {
+  final IotDeviceRepository _repository;
+  final Esp32Dht22Service _esp32Service;
+
+  SyncEsp32ReadingNotifier(this._repository, this._esp32Service)
+    : super(const AsyncValue.data(null));
+
+  Future<void> syncDevice(IotDevice device) async {
+    final esp32Url = device.metadata['esp32Url'] as String?;
+    if (esp32Url == null || esp32Url.trim().isEmpty) {
+      throw Exception('Adresse ESP32 manquante');
+    }
+
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final reading = await _esp32Service.fetchReading(
+        baseUrl: esp32Url,
+        deviceId: device.id,
+      );
+      await _repository.recordReading(reading);
+    });
+
+    if (state.hasError) {
+      throw state.error!;
+    }
+  }
+}
+
+final syncEsp32ReadingProvider =
+    StateNotifierProvider<SyncEsp32ReadingNotifier, AsyncValue<void>>((ref) {
+      final repository = ref.watch(iotDeviceRepositoryProvider);
+      final esp32Service = ref.watch(esp32Dht22ServiceProvider);
+      return SyncEsp32ReadingNotifier(repository, esp32Service);
     });

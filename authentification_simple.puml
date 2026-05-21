@@ -1,0 +1,75 @@
+@startuml
+title Authentification réussie - Kiwo
+
+actor Utilisateur
+participant Presentation
+participant Domaine
+participant Data
+participant "Service externe" as ServiceExterne
+
+Utilisateur -> Presentation : Ouvre l'application
+Presentation -> ServiceExterne : Firebase.initializeApp()
+ServiceExterne --> Presentation : OK
+
+Presentation -> Domaine : watchAuthentication()
+Domaine -> Data : watchAuthentication()
+Data -> ServiceExterne : authStateChanges()
+ServiceExterne --> Data : Non connecté
+Data --> Domaine : Non connecté
+Domaine --> Presentation : Non connecté
+
+opt Utilisateur non connecté
+Presentation -> Utilisateur : Affiche LoginScreen
+end
+
+Utilisateur -> Presentation : Saisit email et mot de passe
+Utilisateur -> Presentation : Clique "Se connecter"
+
+Presentation -> Presentation : Valide le formulaire
+
+alt Formulaire invalide
+Presentation --> Utilisateur : Affiche erreurs
+else Formulaire valide
+Presentation -> Presentation : Affiche chargement
+
+Presentation -> Domaine : signIn(email, motDePasse)
+Domaine -> Data : signIn(email, motDePasse)
+Data -> ServiceExterne : signInWithEmailAndPassword(email, motDePasse)
+
+alt Erreur Firebase ou identifiants invalides
+ServiceExterne --> Data : Erreur
+Data --> Domaine : Echec
+Domaine --> Presentation : Echec
+Presentation -> Presentation : Masque chargement
+Presentation --> Utilisateur : Affiche message d'erreur
+else Authentification réussie
+ServiceExterne --> Data : UserCredential
+Data --> Domaine : Succès
+Domaine --> Presentation : Succès
+Presentation -> Presentation : Masque chargement
+
+ServiceExterne --> Data : authStateChanges utilisateur connecté
+Data --> Domaine : Utilisateur connecté
+Domaine --> Presentation : Utilisateur connecté
+
+Presentation -> Domaine : watchCurrentUserProfile()
+Domaine -> Data : watchCurrentUserProfile()
+Data -> ServiceExterne : Lire users/{uid}
+ServiceExterne --> Data : Document utilisateur
+Data --> Domaine : UserProfile
+Domaine --> Presentation : UserProfile
+
+Presentation -> Domaine : resolveRole(UserProfile)
+Domaine -> Data : resolveRole(UserProfile)
+Data --> Domaine : role
+Domaine --> Presentation : role
+
+alt role == "admin"
+Presentation -> Utilisateur : Affiche AdminDashboardScreen
+else role == "user"
+Presentation -> Utilisateur : Affiche HomeScreen
+end
+end
+end
+
+@enduml

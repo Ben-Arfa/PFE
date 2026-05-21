@@ -25,6 +25,7 @@ class _AddDeviceDialogState extends ConsumerState<AddDeviceDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _deviceIdController;
   late final TextEditingController _buildingIdController;
+  late final TextEditingController _esp32UrlController;
 
   @override
   void initState() {
@@ -34,6 +35,7 @@ class _AddDeviceDialogState extends ConsumerState<AddDeviceDialog> {
     _buildingIdController = TextEditingController(
       text: widget.initialBuildingId ?? '',
     );
+    _esp32UrlController = TextEditingController();
   }
 
   @override
@@ -41,6 +43,7 @@ class _AddDeviceDialogState extends ConsumerState<AddDeviceDialog> {
     _nameController.dispose();
     _deviceIdController.dispose();
     _buildingIdController.dispose();
+    _esp32UrlController.dispose();
     super.dispose();
   }
 
@@ -70,11 +73,17 @@ class _AddDeviceDialogState extends ConsumerState<AddDeviceDialog> {
       id: _generateRandomId(),
       deviceId: _deviceIdController.text,
       name: _nameController.text,
-      type: 'multi-sensor',
+      type: 'dht22',
       buildingId: _buildingIdController.text,
       lotId: '',
       isActive: true,
       createdAt: DateTime.now(),
+      metadata: {
+        if (_esp32UrlController.text.trim().isNotEmpty)
+          'esp32Url': _esp32UrlController.text.trim(),
+        'sensor': 'DHT22',
+        'protocol': 'http',
+      },
     );
 
     try {
@@ -133,6 +142,19 @@ class _AddDeviceDialogState extends ConsumerState<AddDeviceDialog> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   prefixIcon: const Icon(Icons.fingerprint_rounded),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _esp32UrlController,
+                keyboardType: TextInputType.url,
+                decoration: InputDecoration(
+                  labelText: 'Adresse ESP32',
+                  hintText: 'Ex: 192.168.1.45',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  prefixIcon: const Icon(Icons.wifi_rounded),
                 ),
               ),
               const SizedBox(height: 12),

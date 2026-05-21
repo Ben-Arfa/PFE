@@ -116,30 +116,51 @@ class DeviceDetailsScreen extends ConsumerWidget {
                           value: _formatDateTime(device.lastSync!),
                         ),
                       ],
+                      if ((device.metadata['esp32Url'] as String?)
+                              ?.trim()
+                              .isNotEmpty ??
+                          false) ...[
+                        const SizedBox(height: 8),
+                        _InfoRow(
+                          icon: Icons.wifi_rounded,
+                          label: 'ESP32',
+                          value: device.metadata['esp32Url'] as String,
+                        ),
+                      ],
                       const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: device.isActive
-                              ? Colors.green.withValues(alpha: 0.1)
-                              : Colors.orange.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          device.isActive
-                              ? 'Appareil Actif'
-                              : 'Appareil Inactif',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: device.isActive
-                                ? Colors.green[700]
-                                : Colors.orange[700],
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: device.isActive
+                                  ? Colors.green.withValues(alpha: 0.1)
+                                  : Colors.orange.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              device.isActive
+                                  ? 'Appareil Actif'
+                                  : 'Appareil Inactif',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: device.isActive
+                                    ? Colors.green[700]
+                                    : Colors.orange[700],
+                              ),
+                            ),
                           ),
-                        ),
+                          const Spacer(),
+                          if ((device.metadata['esp32Url'] as String?)
+                                  ?.trim()
+                                  .isNotEmpty ??
+                              false)
+                            _SyncEsp32Button(device: device),
+                        ],
                       ),
                     ],
                   ),
@@ -193,6 +214,48 @@ class DeviceDetailsScreen extends ConsumerWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _SyncEsp32Button extends ConsumerWidget {
+  final dynamic device;
+
+  const _SyncEsp32Button({required this.device});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final syncState = ref.watch(syncEsp32ReadingProvider);
+
+    return ElevatedButton.icon(
+      onPressed: syncState.isLoading
+          ? null
+          : () async {
+              try {
+                await ref
+                    .read(syncEsp32ReadingProvider.notifier)
+                    .syncDevice(device);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Lecture ESP32 enregistree')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erreur ESP32: ${e.toString()}')),
+                  );
+                }
+              }
+            },
+      icon: syncState.isLoading
+          ? const SizedBox(
+              height: 16,
+              width: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.sync_rounded),
+      label: const Text('Sync'),
     );
   }
 }
