@@ -177,3 +177,96 @@ final syncEsp32ReadingProvider =
       final esp32Service = ref.watch(esp32Dht22ServiceProvider);
       return SyncEsp32ReadingNotifier(repository, esp32Service);
     });
+// ============================================================
+// AJOUTEZ CES PROVIDERS À LA FIN DE iot_device_provider.dart
+// ============================================================
+
+// Notifier pour envoyer les seuils à l'ESP32
+class SendSeuilsNotifier extends StateNotifier<AsyncValue<void>> {
+  final Esp32Dht22Service _esp32Service;
+
+  SendSeuilsNotifier(this._esp32Service) : super(const AsyncValue.data(null));
+
+  Future<void> sendSeuils({
+    required String baseUrl,
+    required double tempMin,
+    required double tempMax,
+    required double humidityMin,
+    required double humidityMax,
+  }) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(
+      () => _esp32Service.sendSeuils(
+        baseUrl: baseUrl,
+        tempMin: tempMin,
+        tempMax: tempMax,
+        humidityMin: humidityMin,
+        humidityMax: humidityMax,
+      ),
+    );
+    if (state.hasError) throw state.error!;
+  }
+}
+
+final sendSeuilsProvider =
+    StateNotifierProvider<SendSeuilsNotifier, AsyncValue<void>>((ref) {
+      final esp32Service = ref.watch(esp32Dht22ServiceProvider);
+      return SendSeuilsNotifier(esp32Service);
+    });
+
+// Notifier pour changer le mode auto/manuel
+class SetModeNotifier extends StateNotifier<AsyncValue<void>> {
+  final Esp32Dht22Service _esp32Service;
+
+  SetModeNotifier(this._esp32Service) : super(const AsyncValue.data(null));
+
+  Future<void> setMode({required String baseUrl, required String mode}) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(
+      () => _esp32Service.setMode(baseUrl: baseUrl, mode: mode),
+    );
+    if (state.hasError) throw state.error!;
+  }
+}
+
+final setModeProvider =
+    StateNotifierProvider<SetModeNotifier, AsyncValue<void>>((ref) {
+      final esp32Service = ref.watch(esp32Dht22ServiceProvider);
+      return SetModeNotifier(esp32Service);
+    });
+
+// Notifier pour contrôle manuel d'une LED
+class SetLedNotifier extends StateNotifier<AsyncValue<void>> {
+  final Esp32Dht22Service _esp32Service;
+
+  SetLedNotifier(this._esp32Service) : super(const AsyncValue.data(null));
+
+  Future<void> setLed({
+    required String baseUrl,
+    required int index,
+    required bool state,
+  }) async {
+    this.state = const AsyncValue.loading();
+    this.state = await AsyncValue.guard(
+      () => _esp32Service.setLed(baseUrl: baseUrl, index: index, state: state),
+    );
+    if (this.state.hasError) throw this.state.error!;
+  }
+}
+
+final setLedProvider = StateNotifierProvider<SetLedNotifier, AsyncValue<void>>((
+  ref,
+) {
+  final esp32Service = ref.watch(esp32Dht22ServiceProvider);
+  return SetLedNotifier(esp32Service);
+});
+
+// Provider pour récupérer les données ESP32 en temps réel (polling)
+final esp32DataProvider = FutureProvider.family<Esp32DataResponse?, String>((
+  ref,
+  baseUrl,
+) async {
+  if (baseUrl.trim().isEmpty) return null;
+  final esp32Service = ref.watch(esp32Dht22ServiceProvider);
+  return esp32Service.fetchData(baseUrl: baseUrl);
+});
