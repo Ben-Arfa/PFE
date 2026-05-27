@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kiwo/features/gestions_des_batiments/data/services/building_service.dart';
 import 'package:kiwo/features/gestions_des_batiments/domain/entities/building.dart';
+import '../../data/services/esp32_dht22_service.dart';
 import '../../domain/entities/iot_device.dart';
 import '../providers/iot_device_provider.dart';
 
@@ -80,7 +81,9 @@ class _AddDeviceDialogState extends ConsumerState<AddDeviceDialog> {
       createdAt: DateTime.now(),
       metadata: {
         if (_esp32UrlController.text.trim().isNotEmpty)
-          'esp32Url': _esp32UrlController.text.trim(),
+          'esp32Url': Esp32Dht22Service().normalizeBaseUrl(
+            _esp32UrlController.text,
+          ),
         'sensor': 'DHT22',
         'protocol': 'http',
       },

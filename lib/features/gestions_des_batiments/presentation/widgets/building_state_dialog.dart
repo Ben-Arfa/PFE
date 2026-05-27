@@ -16,8 +16,6 @@ class _BuildingStateDialogState extends State<BuildingStateDialog> {
   bool _loading = true;
   double? _temperature;
   double? _humidity;
-  bool _ventilation = false;
-  bool _heating = false;
 
   Future<void> _load() async {
     setState(() => _loading = true);
@@ -25,37 +23,10 @@ class _BuildingStateDialogState extends State<BuildingStateDialog> {
       final sensors = await _service.getLatestSensorsForBuilding(
         widget.building.id,
       );
-      final controls = await _service.getBuildingControls(widget.building.id);
       setState(() {
         _temperature = sensors['temperature'];
         _humidity = sensors['humidity'];
-        _ventilation = controls['ventilationOn'] == true;
-        _heating = controls['heatingOn'] == true;
       });
-    } catch (e) {
-      // ignore
-    } finally {
-      setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _toggleVentilation(bool value) async {
-    setState(() => _loading = true);
-    try {
-      await _service.setVentilation(widget.building.id, value);
-      setState(() => _ventilation = value);
-    } catch (e) {
-      // ignore
-    } finally {
-      setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _toggleHeating(bool value) async {
-    setState(() => _loading = true);
-    try {
-      await _service.setHeating(widget.building.id, value);
-      setState(() => _heating = value);
     } catch (e) {
       // ignore
     } finally {
@@ -132,17 +103,6 @@ class _BuildingStateDialogState extends State<BuildingStateDialog> {
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    SwitchListTile(
-                      title: const Text('Ventilation'),
-                      value: _ventilation,
-                      onChanged: (v) => _toggleVentilation(v),
-                    ),
-                    SwitchListTile(
-                      title: const Text('Chauffage'),
-                      value: _heating,
-                      onChanged: (v) => _toggleHeating(v),
                     ),
                   ],
                 ),

@@ -74,6 +74,22 @@ class Esp32DataResponse {
 class Esp32Dht22Service {
   final Duration _timeout = const Duration(seconds: 8);
 
+  String normalizeBaseUrl(String value) {
+    var url = value.trim();
+    if (url.isEmpty) return url;
+
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'http://$url';
+    }
+
+    return url.replaceFirst(RegExp(r'/+$'), '');
+  }
+
+  Uri _uri(String baseUrl, String path) {
+    final normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+    return Uri.parse('$normalizedBaseUrl$path');
+  }
+
   // ─── Lecture des données DHT22 ──────────────────────────────────────────
 
   /// Récupère température, humidité, état LEDs et alertes depuis l'ESP32
@@ -83,7 +99,7 @@ class Esp32Dht22Service {
     required String deviceId,
   }) async {
     final response = await http
-        .get(Uri.parse('$baseUrl/data'))
+        .get(_uri(baseUrl, '/data'))
         .timeout(_timeout);
 
     if (response.statusCode != 200) {
@@ -118,7 +134,7 @@ class Esp32Dht22Service {
   /// Récupère toutes les données ESP32 (pour affichage dashboard)
   Future<Esp32DataResponse> fetchData({required String baseUrl}) async {
     final response = await http
-        .get(Uri.parse('$baseUrl/data'))
+        .get(_uri(baseUrl, '/data'))
         .timeout(_timeout);
 
     if (response.statusCode != 200) {
@@ -141,7 +157,7 @@ class Esp32Dht22Service {
   }) async {
     final response = await http
         .post(
-          Uri.parse('$baseUrl/seuils'),
+          _uri(baseUrl, '/seuils'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
             'tempMin': tempMin,
@@ -170,7 +186,7 @@ class Esp32Dht22Service {
 
     final response = await http
         .post(
-          Uri.parse('$baseUrl/led'),
+          _uri(baseUrl, '/led'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({'index': index, 'state': state}),
         )
@@ -192,7 +208,7 @@ class Esp32Dht22Service {
 
     final response = await http
         .post(
-          Uri.parse('$baseUrl/mode'),
+          _uri(baseUrl, '/mode'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({'mode': mode}),
         )
@@ -209,7 +225,7 @@ class Esp32Dht22Service {
   Future<bool> ping({required String baseUrl}) async {
     try {
       final response = await http
-          .get(Uri.parse('$baseUrl/status'))
+          .get(_uri(baseUrl, '/status'))
           .timeout(const Duration(seconds: 3));
       return response.statusCode == 200;
     } catch (_) {

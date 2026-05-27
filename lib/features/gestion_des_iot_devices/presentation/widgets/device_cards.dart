@@ -5,11 +5,13 @@ class DeviceCard extends StatelessWidget {
   final IotDevice device;
   final VoidCallback onTap;
   final VoidCallback? onDelete;
+  final VoidCallback? onEditThresholds;
 
   const DeviceCard({
     required this.device,
     required this.onTap,
     this.onDelete,
+    this.onEditThresholds,
     super.key,
   });
 
@@ -22,6 +24,11 @@ class DeviceCard extends StatelessWidget {
     final lastSyncText = device.lastSync != null
         ? _formatDate(device.lastSync!)
         : 'Jamais synchronisé';
+
+    final tempMin = _numberFromMetadata('tempMin');
+    final tempMax = _numberFromMetadata('tempMax');
+    final humidityMin = _numberFromMetadata('humidityMin');
+    final humidityMax = _numberFromMetadata('humidityMax');
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -76,9 +83,17 @@ class DeviceCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                  if (onEditThresholds != null)
+                    IconButton(
+                      icon: const Icon(Icons.tune_rounded, size: 20),
+                      tooltip: 'Modifier les seuils',
+                      color: Colors.blue,
+                      onPressed: onEditThresholds,
+                    ),
                   if (onDelete != null)
                     IconButton(
                       icon: const Icon(Icons.delete_rounded, size: 20),
+                      tooltip: 'Supprimer',
                       color: Colors.red,
                       onPressed: onDelete,
                     ),
@@ -119,6 +134,26 @@ class DeviceCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.thermostat_rounded,
+                    size: 16,
+                    color: Colors.grey[600],
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      'Seuils: ${tempMin.toStringAsFixed(0)}-${tempMax.toStringAsFixed(0)}°C | '
+                      '${humidityMin.toStringAsFixed(0)}-${humidityMax.toStringAsFixed(0)}%',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -143,6 +178,28 @@ class DeviceCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  double _numberFromMetadata(String key) {
+    final value = device.metadata[key];
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? _defaultFor(key);
+    return _defaultFor(key);
+  }
+
+  double _defaultFor(String key) {
+    switch (key) {
+      case 'tempMin':
+        return 18;
+      case 'tempMax':
+        return 30;
+      case 'humidityMin':
+        return 40;
+      case 'humidityMax':
+        return 80;
+      default:
+        return 0;
+    }
   }
 }
 
