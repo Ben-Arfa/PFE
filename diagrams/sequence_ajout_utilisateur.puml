@@ -1,0 +1,133 @@
+@startuml
+title Ajout d'un utilisateur - KIWO
+
+actor "Administrateur" as Admin
+boundary "AdminDashboardScreen\n(Presentation)" as Screen
+control "AdminCreateUserCard\n(Presentation)" as Form
+control "AdminUseCases\n(Domaine)" as UseCases
+control "FirebaseAdminRepository\n(Data)\nimplemente AdminRepository" as Repository
+control "AdminService\n(Data)" as Service
+database "Cloud Firestore\nusers" as Firestore
+control "FirebaseApp secondaire\nkiwo_admin_creator" as SecondaryApp
+control "FirebaseAuth secondaire" as SecondaryAuth
+control "FirebaseAuth principal" as PrimaryAuth
+
+Admin -> Screen : Appuie sur "Ajouter utilisateur"
+activate Screen
+Screen -> Screen : setState(_accountsMode = "create")
+Screen -> Form : Afficher le formulaire d'ajout
+deactivate Screen
+
+Admin -> Form : Saisit nom, prenom, email
+Admin -> Form : Appuie sur "Creer le compte"
+Form -> Screen : onCreate()
+activate Screen
+Screen -> Screen : _createFormKey.currentState!.validate()
+
+alt Formulaire invalide
+  Screen --> Form : Afficher les erreurs de validation
+  deactivate Screen
+else Formulaire valide
+  Screen -> Screen : setState(_isCreating = true)
+  Screen -> UseCases : createUserAccount(firstName, lastName, email)
+  activate UseCases
+  UseCases -> Repository : createUserAccount(firstName, lastName, email)
+  activate Repository
+  Repository -> Service : createUserAccount(firstName, lastName, email)
+  activate Service
+
+  Service -> PrimaryAuth : currentUser?.uid
+  activate PrimaryAuth
+  PrimaryAuth --> Service : adminUid
+  deactivate PrimaryAuth
+
+  alt Administrateur non connecte
+    Service --> Repository : Exception("Administrateur non connecte.")
+    Repository --> UseCases : Echec
+    UseCases --> Screen : Echec
+    Screen -> Screen : Afficher SnackBar erreur
+    Screen -> Screen : setState(_isCreating = false)
+  else Administrateur connecte
+    Service -> Firestore : get users/{adminUid}
+    activate Firestore
+    Firestore --> Service : Document administrateur
+    deactivate Firestore
+    Service -> Service : Verifier role == "admin"
+
+    alt Role different de admin
+      Service --> Repository : Exception("Action reservee a un administrateur.")
+      Repository --> UseCases : Echec
+      UseCases --> Screen : Echec
+      Screen -> Screen : Afficher SnackBar erreur
+      Screen -> Screen : setState(_isCreating = false)
+    else Role admin valide
+      Service -> Service : _getOrCreateSecondaryApp()
+      activate Service
+      Service -> SecondaryApp : Reutiliser ou Firebase.initializeApp(...)
+      activate SecondaryApp
+      SecondaryApp --> Service : FirebaseApp
+      deactivate SecondaryApp
+      deactivate Service
+
+      Service -> SecondaryAuth : instanceFor(app: secondaryApp)
+      activate SecondaryAuth
+      SecondaryAuth --> Service : secondaryAuth
+      deactivate SecondaryAuth
+
+      Service -> Service : _generateTemporaryPassword()
+      Service -> SecondaryAuth : createUserWithEmailAndPassword(email, temporaryPassword)
+      activate SecondaryAuth
+
+      alt Erreur Firebase Auth
+        SecondaryAuth --> Service : FirebaseAuthException
+        deactivate SecondaryAuth
+        Service -> Service : _mapAuthCreateError(e)
+      else Compte Auth cree
+        SecondaryAuth --> Service : UserCredential(uid)
+        deactivate SecondaryAuth
+        Service -> Firestore : set users/{uid}\nfirstName, lastName, email,\nrole="user", createdAt,\ncreatedBy=adminUid
+        activate Firestore
+        Firestore --> Service : Profil utilisateur enregistre
+        deactivate Firestore
+
+        Service -> PrimaryAuth : sendPasswordResetEmail(email)
+        activate PrimaryAuth
+        PrimaryAuth --> Service : Email de definition du mot de passe envoye
+        deactivate PrimaryAuth
+      end
+
+      opt Nettoyage systematique apres tentative de creation
+        Service -> SecondaryAuth : signOut()
+        activate SecondaryAuth
+        SecondaryAuth --> Service : OK
+        deactivate SecondaryAuth
+        Service -> SecondaryApp : delete()
+        activate SecondaryApp
+        SecondaryApp --> Service : OK ou erreur ignoree
+        deactivate SecondaryApp
+      end
+
+      alt Creation echouee
+        Service --> Repository : Exception(message)
+        Repository --> UseCases : Echec
+        UseCases --> Screen : Echec
+        Screen -> Screen : Afficher SnackBar erreur
+        Screen -> Screen : setState(_isCreating = false)
+      else Creation reussie
+        Service --> Repository : Succes
+        Repository --> UseCases : Succes
+        UseCases --> Screen : Succes
+        Screen -> Screen : Vider les champs du formulaire
+        Screen -> Screen : Afficher SnackBar succes
+        Screen -> Screen : setState(_isCreating = false)
+      end
+    end
+  end
+
+  deactivate Service
+  deactivate Repository
+  deactivate UseCases
+  deactivate Screen
+end
+
+@enduml

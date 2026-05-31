@@ -52,9 +52,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 final scheduledAt = (data['scheduledAt'] as Timestamp?)
                     ?.toDate();
                 if (scheduledAt == null) return false;
-                if (status != 'scheduled' && status != 'received') {
-                  return false;
-                }
+                if (status != 'scheduled' && status != 'received') return false;
                 return scheduledAt.isAfter(now) || _sameDay(scheduledAt, now);
               })
               .take(4)
@@ -70,59 +68,81 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final theme = ThemeProvider.instance;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _DashboardHeader(
-            profileRepository: _profileRepository,
-            theme: theme,
-            notificationsStream: _watch('notifications'),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 1000;
+        final mainColumn = SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _DashboardHeader(
+                profileRepository: _profileRepository,
+                theme: theme,
+              ),
+              const SizedBox(height: 14),
+              _QuickActions(theme: theme),
+              const SizedBox(height: 18),
+              _OverviewPanel(
+                theme: theme,
+                buildingsStream: _watch('buildings'),
+                lotsStream: _watch('lots'),
+                poultryTypesStream: _watch('poultryTypes'),
+                notificationsStream: _watch('notifications'),
+              ),
+              const SizedBox(height: 18),
+              _SectionHeading(
+                title: 'Etat des batiments',
+                actionLabel: 'Temps reel',
+                theme: theme,
+              ),
+              const SizedBox(height: 10),
+              _EnvironmentPanel(
+                theme: theme,
+                buildingsStream: _watch('buildings'),
+                devicesStream: _watch('iot_devices'),
+              ),
+              const SizedBox(height: 18),
+              _SectionHeading(
+                title: 'Lots a surveiller',
+                actionLabel: 'Mortalite',
+                theme: theme,
+              ),
+              const SizedBox(height: 10),
+              _RiskPanel(theme: theme, lotsStream: _watch('lots')),
+              const SizedBox(height: 18),
+              _SectionHeading(
+                title: 'Vaccinations a venir',
+                actionLabel: 'Planning',
+                theme: theme,
+              ),
+              const SizedBox(height: 10),
+              _UpcomingVaccinationsPanel(
+                theme: theme,
+                stream: _watchUpcomingVaccinations(),
+              ),
+            ],
           ),
-          const SizedBox(height: 14),
-          _QuickActions(theme: theme),
-          const SizedBox(height: 18),
-          _OverviewPanel(
-            theme: theme,
-            buildingsStream: _watch('buildings'),
-            lotsStream: _watch('lots'),
-            poultryTypesStream: _watch('poultryTypes'),
-            notificationsStream: _watch('notifications'),
-          ),
-          const SizedBox(height: 18),
-          _SectionHeading(
-            title: 'Etat des batiments',
-            actionLabel: 'Temps reel',
-            theme: theme,
-          ),
-          const SizedBox(height: 10),
-          _EnvironmentPanel(
-            theme: theme,
-            buildingsStream: _watch('buildings'),
-            devicesStream: _watch('iot_devices'),
-          ),
-          const SizedBox(height: 18),
-          _SectionHeading(
-            title: 'Lots a surveiller',
-            actionLabel: 'Mortalite',
-            theme: theme,
-          ),
-          const SizedBox(height: 10),
-          _RiskPanel(theme: theme, lotsStream: _watch('lots')),
-          const SizedBox(height: 18),
-          _SectionHeading(
-            title: 'Vaccinations a venir',
-            actionLabel: 'Planning',
-            theme: theme,
-          ),
-          const SizedBox(height: 10),
-          _UpcomingVaccinationsPanel(
-            theme: theme,
-            stream: _watchUpcomingVaccinations(),
-          ),
-        ],
-      ),
+        );
+
+        if (!isWide) return mainColumn;
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(flex: 3, child: mainColumn),
+            const SizedBox(width: 18),
+            SizedBox(
+              width: 360,
+              child: _RightSummaryPanel(
+                theme: theme,
+                notificationsStream: _watch('notifications'),
+                lotsStream: _watch('lots'),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -130,12 +150,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 class _DashboardHeader extends StatelessWidget {
   final ProfileRepositoryImpl profileRepository;
   final ThemeProvider theme;
-  final Stream<QuerySnapshot<Map<String, dynamic>>>? notificationsStream;
 
   const _DashboardHeader({
     required this.profileRepository,
     required this.theme,
-    required this.notificationsStream,
   });
 
   @override
@@ -144,110 +162,63 @@ class _DashboardHeader extends StatelessWidget {
       stream: profileRepository.watchCurrentUserProfile(),
       builder: (context, profileSnapshot) {
         final name = _firstName(profileSnapshot.data);
-
-        final title = name == null ? 'Tableau de bord' : 'Bonjour, $name';
+        final message = name == null ? 'Bienvenue' : 'Bienvenue, $name';
 
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: theme.isDark ? const Color(0xFF1B2618) : Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: theme.isDark
-                  ? const Color(0xFF33432E)
-                  : const Color(0xFFE4EAD9),
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFF5DB83D).withValues(alpha: 0.98),
+                const Color(0xFF8FD14E).withValues(alpha: 0.85),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
+            borderRadius: BorderRadius.circular(22),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(theme.isDark ? 0.18 : 0.06),
-                blurRadius: 22,
-                offset: const Offset(0, 10),
+                color: const Color(0xFF5DB83D).withValues(alpha: 0.22),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            _SoftBadge(
-                              label: _todayLabel(),
-                              icon: Icons.calendar_today_rounded,
-                              color: const Color(0xFF5B8FA8),
-                            ),
-                            StreamBuilder<
-                              QuerySnapshot<Map<String, dynamic>>
-                            >(
-                              stream: notificationsStream,
-                              builder: (context, snapshot) {
-                                final unread = _unreadCount(snapshot.data);
-                                return _SoftBadge(
-                                  label: unread == 0
-                                      ? 'A jour'
-                                      : '$unread alerte(s)',
-                                  icon: unread == 0
-                                      ? Icons.verified_rounded
-                                      : Icons.notifications_active_rounded,
-                                  color: unread == 0
-                                      ? const Color(0xFF4B7B28)
-                                      : const Color(0xFFAB1717),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 18),
-                        Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: theme.textColor,
-                            fontSize: 26,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Pilotage de l\'elevage, capteurs IoT et rappels importants.',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: theme.mutedColor,
-                            fontSize: 13,
-                            height: 1.35,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                  const CircleAvatar(
+                    radius: 24,
+                    backgroundColor: Colors.white24,
+                    child: Icon(
+                      Icons.dashboard_rounded,
+                      color: Colors.white,
+                      size: 26,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF4B7B28),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.monitor_heart_rounded,
-                      color: Colors.white,
-                      size: 28,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      message,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Vue rapide du tableau de bord',
+                style: TextStyle(color: Colors.white70, fontSize: 12),
               ),
             ],
           ),
@@ -262,23 +233,6 @@ class _DashboardHeader extends StatelessWidget {
     final fullName = profile?.fullName.trim();
     if (fullName != null && fullName.isNotEmpty) return fullName;
     return null;
-  }
-
-  static int _unreadCount(QuerySnapshot<Map<String, dynamic>>? snapshot) {
-    if (snapshot == null) return 0;
-    return snapshot.docs.where((doc) {
-      final data = doc.data();
-      final status = data['status'] as String?;
-      final isRelevant = status == 'scheduled' || status == 'received';
-      return isRelevant && (data['isRead'] as bool? ?? false) == false;
-    }).length;
-  }
-
-  static String _todayLabel() {
-    final now = DateTime.now();
-    final day = now.day.toString().padLeft(2, '0');
-    final month = now.month.toString().padLeft(2, '0');
-    return 'Aujourd\'hui $day/$month/${now.year}';
   }
 }
 
@@ -307,9 +261,9 @@ class _QuickActions extends StatelessWidget {
             theme: theme,
             icon: Icons.warning_amber_rounded,
             label: 'Alertes',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const AlertsScreen()),
-            ),
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const AlertsScreen())),
           ),
         ),
       ],
@@ -354,15 +308,14 @@ class _OverviewPanel extends StatelessWidget {
                     final subjects = activeLots.fold<int>(
                       0,
                       (sum, doc) =>
-                          sum + ((doc.data()['currentBirdCount'] as num?) ?? 0)
+                          sum +
+                          ((doc.data()['currentBirdCount'] as num?) ?? 0)
                               .toInt(),
                     );
                     final occupiedBuildings = buildings
                         .where((doc) => doc.data()['status'] == 'active')
                         .length;
-                    final unread = _DashboardHeader._unreadCount(
-                      notificationsSnapshot.data,
-                    );
+                    final unread = _unreadCount(notificationsSnapshot.data);
 
                     return LayoutBuilder(
                       builder: (context, constraints) {
@@ -372,7 +325,7 @@ class _OverviewPanel extends StatelessWidget {
                             title: 'Sujets',
                             value: subjects.toString(),
                             subtitle: 'effectif actif',
-                            icon: Icons.groups_2_rounded,
+                            icon: Icons.egg_alt_rounded,
                             color: const Color(0xFF4B7B28),
                             theme: theme,
                           ),
@@ -420,9 +373,9 @@ class _OverviewPanel extends StatelessWidget {
 
                         return GridView.count(
                           crossAxisCount: 2,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                          childAspectRatio: 1.18,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                          childAspectRatio: 1.2,
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           children: cards,
@@ -437,6 +390,16 @@ class _OverviewPanel extends StatelessWidget {
         );
       },
     );
+  }
+
+  static int _unreadCount(QuerySnapshot<Map<String, dynamic>>? snapshot) {
+    if (snapshot == null) return 0;
+    return snapshot.docs.where((doc) {
+      final data = doc.data();
+      final status = data['status'] as String?;
+      final isRelevant = status == 'scheduled' || status == 'received';
+      return isRelevant && (data['isRead'] as bool? ?? false) == false;
+    }).length;
   }
 }
 
@@ -584,7 +547,9 @@ class _BuildingEnvironmentCard extends StatelessWidget {
                     ),
                   ),
                   _StatusPill(
-                    label: reading == null ? 'Sans lecture' : _stateLabel(tempState, humidityState),
+                    label: reading == null
+                        ? 'Sans lecture'
+                        : _stateLabel(tempState, humidityState),
                     icon: reading == null
                         ? Icons.sync_problem_rounded
                         : Icons.check_circle_outline_rounded,
@@ -727,8 +692,7 @@ class _RiskPanel extends StatelessWidget {
               mortality: mortality,
               isActive: data['isActive'] == true,
             );
-          }).toList()
-            ..sort((a, b) => b.mortality.compareTo(a.mortality));
+          }).toList()..sort((a, b) => b.mortality.compareTo(a.mortality));
 
           final top = points.take(5).toList();
           if (top.isEmpty) {
@@ -793,10 +757,7 @@ class _UpcomingVaccinationsPanel extends StatelessWidget {
   final ThemeProvider theme;
   final Stream<List<Map<String, dynamic>>> stream;
 
-  const _UpcomingVaccinationsPanel({
-    required this.theme,
-    required this.stream,
-  });
+  const _UpcomingVaccinationsPanel({required this.theme, required this.stream});
 
   @override
   Widget build(BuildContext context) {
@@ -888,6 +849,211 @@ class _UpcomingVaccinationsPanel extends StatelessWidget {
   }
 }
 
+class _RightSummaryPanel extends StatelessWidget {
+  final ThemeProvider theme;
+  final Stream<QuerySnapshot<Map<String, dynamic>>>? notificationsStream;
+  final Stream<QuerySnapshot<Map<String, dynamic>>>? lotsStream;
+
+  const _RightSummaryPanel({
+    required this.theme,
+    required this.notificationsStream,
+    required this.lotsStream,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Panel(
+          theme: theme,
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Vue rapide',
+                style: TextStyle(
+                  color: theme.textColor,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _CompactStat(
+                      label: 'Alertes',
+                      value: 'Live',
+                      color: const Color(0xFFAB1717),
+                      theme: theme,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _CompactStat(
+                      label: 'Suivi',
+                      value: '24/7',
+                      color: const Color(0xFF5B8FA8),
+                      theme: theme,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 72,
+                width: double.infinity,
+                child: CustomPaint(
+                  painter: _SparklinePainter(
+                    values: const [2, 4, 6, 3, 7, 5, 6],
+                    color: theme.mutedColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _Panel(
+          theme: theme,
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Dernieres alertes',
+                style: TextStyle(
+                  color: theme.textColor,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: notificationsStream,
+                builder: (context, snapshot) {
+                  final docs = snapshot.data?.docs ?? const [];
+                  if (docs.isEmpty) {
+                    return Text(
+                      'Aucune alerte recente',
+                      style: TextStyle(color: theme.mutedColor),
+                    );
+                  }
+                  return Column(
+                    children: docs.take(3).map((d) {
+                      final data = d.data();
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFAB1717),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                (data['title'] ?? 'Alerte').toString(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(color: theme.textColor),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _Panel(
+          theme: theme,
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Lots critiques',
+                style: TextStyle(
+                  color: theme.textColor,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: lotsStream,
+                builder: (context, snapshot) {
+                  final docs = snapshot.data?.docs ?? const [];
+                  final risks =
+                      docs.map((d) {
+                        final data = d.data();
+                        final initial =
+                            (data['initialBirdCount'] as num?)?.toDouble() ?? 1;
+                        final current =
+                            (data['currentBirdCount'] as num?)?.toDouble() ?? 0;
+                        final mortality =
+                            ((initial - current) /
+                                (initial <= 0 ? 1 : initial)) *
+                            100;
+                        return {
+                          'mort': mortality,
+                          'name': (data['identifier'] ?? 'Lot').toString(),
+                        };
+                      }).toList()..sort(
+                        (a, b) => (b['mort'] as double).compareTo(
+                          a['mort'] as double,
+                        ),
+                      );
+
+                  if (risks.isEmpty) {
+                    return Text(
+                      'Aucun lot critique',
+                      style: TextStyle(color: theme.mutedColor),
+                    );
+                  }
+
+                  return Column(
+                    children: risks.take(3).map((r) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                r['name'].toString(),
+                                style: TextStyle(color: theme.textColor),
+                              ),
+                            ),
+                            Text(
+                              '${(r['mort'] as double).toStringAsFixed(1)} %',
+                              style: const TextStyle(
+                                color: Color(0xFFAB1717),
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _MetricTile extends StatelessWidget {
   final String title;
   final String value;
@@ -909,41 +1075,41 @@ class _MetricTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return _Panel(
       theme: theme,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
             children: [
-              Icon(icon, color: color, size: 22),
+              Icon(icon, color: color, size: 17),
               const Spacer(),
               Container(
-                width: 8,
-                height: 8,
+                width: 6,
+                height: 6,
                 decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 6),
           Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: theme.textColor,
-              fontSize: 26,
+              fontSize: 17,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: theme.textColor,
-              fontSize: 13,
+              fontSize: 11,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -951,7 +1117,7 @@ class _MetricTile extends StatelessWidget {
             subtitle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: theme.mutedColor, fontSize: 11),
+            style: TextStyle(color: theme.mutedColor, fontSize: 9),
           ),
         ],
       ),
@@ -1114,6 +1280,35 @@ class _Panel extends StatelessWidget {
   }
 }
 
+class _EmptyPanel extends StatelessWidget {
+  final ThemeProvider theme;
+  final IconData icon;
+  final String text;
+
+  const _EmptyPanel({
+    required this.theme,
+    required this.icon,
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _Panel(
+      theme: theme,
+      padding: const EdgeInsets.all(18),
+      child: Row(
+        children: [
+          Icon(icon, color: theme.mutedColor),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text, style: TextStyle(color: theme.mutedColor)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _StatusPill extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -1152,36 +1347,37 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
-class _SoftBadge extends StatelessWidget {
+class _CompactStat extends StatelessWidget {
+  final ThemeProvider theme;
   final String label;
-  final IconData icon;
+  final String value;
   final Color color;
 
-  const _SoftBadge({
+  const _CompactStat({
+    required this.theme,
     required this.label,
-    required this.icon,
+    required this.value,
     required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.18)),
+        border: Border.all(color: color.withOpacity(0.15)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 5),
+          Text(label, style: TextStyle(color: theme.mutedColor, fontSize: 11)),
+          const SizedBox(height: 6),
           Text(
-            label,
+            value,
             style: TextStyle(
-              color: color,
-              fontSize: 11,
+              color: theme.textColor,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -1191,32 +1387,38 @@ class _SoftBadge extends StatelessWidget {
   }
 }
 
-class _EmptyPanel extends StatelessWidget {
-  final ThemeProvider theme;
-  final IconData icon;
-  final String text;
+class _SparklinePainter extends CustomPainter {
+  final List<double> values;
+  final Color color;
 
-  const _EmptyPanel({
-    required this.theme,
-    required this.icon,
-    required this.text,
-  });
+  const _SparklinePainter({required this.values, required this.color});
 
   @override
-  Widget build(BuildContext context) {
-    return _Panel(
-      theme: theme,
-      padding: const EdgeInsets.all(18),
-      child: Row(
-        children: [
-          Icon(icon, color: theme.mutedColor),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(text, style: TextStyle(color: theme.mutedColor)),
-          ),
-        ],
-      ),
-    );
+  void paint(Canvas canvas, Size size) {
+    if (values.isEmpty) return;
+    final paint = Paint()
+      ..color = color.withOpacity(0.9)
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+    final path = Path();
+    final maxValue = values.reduce(math.max);
+    for (var i = 0; i < values.length; i++) {
+      final x = i * (size.width / (values.length - 1));
+      final y =
+          size.height -
+          (values[i] / (maxValue == 0 ? 1 : maxValue)) * size.height;
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SparklinePainter oldDelegate) {
+    return oldDelegate.values != values || oldDelegate.color != color;
   }
 }
 

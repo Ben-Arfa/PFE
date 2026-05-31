@@ -220,10 +220,24 @@ class SetModeNotifier extends StateNotifier<AsyncValue<void>> {
 
   SetModeNotifier(this._esp32Service) : super(const AsyncValue.data(null));
 
-  Future<void> setMode({required String baseUrl, required String mode}) async {
+  Future<void> setMode({
+    required String baseUrl,
+    required String mode,
+    double? tempMin,
+    double? tempMax,
+    double? humidityMin,
+    double? humidityMax,
+  }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(
-      () => _esp32Service.setMode(baseUrl: baseUrl, mode: mode),
+      () => _esp32Service.setMode(
+        baseUrl: baseUrl,
+        mode: mode,
+        tempMin: tempMin,
+        tempMax: tempMax,
+        humidityMin: humidityMin,
+        humidityMax: humidityMax,
+      ),
     );
     if (state.hasError) throw state.error!;
   }

@@ -33,17 +33,93 @@ class Esp32DataResponse {
       temperature: (json['temperature'] as num?)?.toDouble() ?? 0.0,
       humidity: (json['humidity'] as num?)?.toDouble() ?? 0.0,
       readingOk: json['readingOk'] as bool? ?? false,
-      mode: json['mode'] as String? ?? 'auto',
+      mode: _modeFromJson(json),
       tempMin: (json['tempMin'] as num?)?.toDouble() ?? 18.0,
       tempMax: (json['tempMax'] as num?)?.toDouble() ?? 30.0,
       humidityMin: (json['humidityMin'] as num?)?.toDouble() ?? 40.0,
       humidityMax: (json['humidityMax'] as num?)?.toDouble() ?? 80.0,
-      leds:
-          (json['leds'] as List?)?.map((e) => e as bool).toList() ??
-          List.filled(4, false),
+      leds: _ledsFromJson(json['leds']),
       alerts:
           (json['alerts'] as List?)?.map((e) => e.toString()).toList() ?? [],
     );
+  }
+
+  static List<bool> _ledsFromJson(dynamic value) {
+    if (value is! List) return List.filled(4, false);
+
+    return value.map((e) {
+      final parsed = _boolFromValue(e);
+      if (parsed != null) return parsed;
+      return false;
+    }).toList();
+  }
+
+  static String _modeFromJson(Map<String, dynamic> json) {
+    final mode = _modeFromValue(json['mode']);
+    if (mode != null) return mode;
+
+    final isAuto =
+        _boolFromValue(json['isAuto']) ?? _boolFromValue(json['auto']);
+    if (isAuto != null) return isAuto ? 'auto' : 'manuel';
+
+    final isManual =
+        _boolFromValue(json['isManual']) ?? _boolFromValue(json['manual']);
+    if (isManual != null) return isManual ? 'manuel' : 'auto';
+
+    return 'auto';
+  }
+
+  static String? _modeFromValue(dynamic value) {
+    if (value == null) return null;
+    if (value is bool) return value ? 'auto' : 'manuel';
+    if (value is num) return value == 0 ? 'manuel' : 'auto';
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized.isEmpty) return null;
+      if (normalized == 'manual' ||
+          normalized == 'manuelle' ||
+          normalized == 'manuel' ||
+          normalized == 'false' ||
+          normalized == '0' ||
+          normalized == 'off') {
+        return 'manuel';
+      }
+      if (normalized == 'auto' ||
+          normalized == 'automatic' ||
+          normalized == 'automatique' ||
+          normalized == 'true' ||
+          normalized == '1' ||
+          normalized == 'on') {
+        return 'auto';
+      }
+    }
+    return null;
+  }
+
+  static bool? _boolFromValue(dynamic value) {
+    if (value == null) return null;
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true' ||
+          normalized == '1' ||
+          normalized == 'on' ||
+          normalized == 'auto' ||
+          normalized == 'automatic' ||
+          normalized == 'automatique') {
+        return true;
+      }
+      if (normalized == 'false' ||
+          normalized == '0' ||
+          normalized == 'off' ||
+          normalized == 'manual' ||
+          normalized == 'manuelle' ||
+          normalized == 'manuel') {
+        return false;
+      }
+    }
+    return null;
   }
 
   /// Retourne un label lisible pour chaque alerte
@@ -98,9 +174,7 @@ class Esp32Dht22Service {
     required String baseUrl,
     required String deviceId,
   }) async {
-    final response = await http
-        .get(_uri(baseUrl, '/data'))
-        .timeout(_timeout);
+    final response = await http.get(_uri(baseUrl, '/data')).timeout(_timeout);
 
     if (response.statusCode != 200) {
       throw Exception('ESP32 erreur ${response.statusCode}');
@@ -133,9 +207,7 @@ class Esp32Dht22Service {
 
   /// Récupère toutes les données ESP32 (pour affichage dashboard)
   Future<Esp32DataResponse> fetchData({required String baseUrl}) async {
-    final response = await http
-        .get(_uri(baseUrl, '/data'))
-        .timeout(_timeout);
+    final response = await http.get(_uri(baseUrl, '/data')).timeout(_timeout);
 
     if (response.statusCode != 200) {
       throw Exception('ESP32 erreur ${response.statusCode}');
@@ -203,20 +275,43 @@ class Esp32Dht22Service {
   Future<void> setMode({
     required String baseUrl,
     required String mode, // 'auto' ou 'manuel'
+    double? tempMin,
+    double? tempMax,
+    double? humidityMin,
+    double? humidityMax,
   }) async {
-    assert(mode == 'auto' || mode == 'manuel', 'Mode invalide');
+    final normalizedMode = _normalizeMode(mode);
+
+    final payload = <String, dynamic>{
+      'mode': normalizedMode,
+      'isAuto': normalizedMode == 'auto',
+      'auto': normalizedMode == 'auto',
+    };
+
+    if (tempMin != null) payload['tempMin'] = tempMin;
+    if (tempMax != null) payload['tempMax'] = tempMax;
+    if (humidityMin != null) payload['humidityMin'] = humidityMin;
+    if (humidityMax != null) payload['humidityMax'] = humidityMax;
 
     final response = await http
         .post(
           _uri(baseUrl, '/mode'),
           headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'mode': mode}),
+          body: jsonEncode(payload),
         )
         .timeout(_timeout);
 
     if (response.statusCode != 200) {
       throw Exception('Erreur changement de mode: ${response.statusCode}');
     }
+  }
+
+  static String _normalizeMode(String mode) {
+    final value = mode.trim().toLowerCase();
+    if (value == 'manual' || value == 'manuelle' || value == 'manuel') {
+      return 'manuel';
+    }
+    return 'auto';
   }
 
   // ─── Statut système ─────────────────────────────────────────────────────

@@ -62,15 +62,7 @@ class _DeviceDetailsScreenState extends ConsumerState<DeviceDetailsScreen> {
 
     // Utilise les seuils déjà dénormalisés dans le device via Building
     try {
-      await ref
-          .read(sendSeuilsProvider.notifier)
-          .sendSeuils(
-            baseUrl: esp32Url,
-            tempMin: device.metadata['tempMin']?.toDouble() ?? 18.0,
-            tempMax: device.metadata['tempMax']?.toDouble() ?? 30.0,
-            humidityMin: device.metadata['humidityMin']?.toDouble() ?? 40.0,
-            humidityMax: device.metadata['humidityMax']?.toDouble() ?? 80.0,
-          );
+      await _sendSeuilsToEsp32(esp32Url, device);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -88,13 +80,62 @@ class _DeviceDetailsScreenState extends ConsumerState<DeviceDetailsScreen> {
     }
   }
 
-  Future<void> _toggleMode(String esp32Url, String currentMode) async {
-    final newMode = currentMode == 'auto' ? 'manuel' : 'auto';
+  Future<void> _sendSeuilsToEsp32(String esp32Url, dynamic device) {
+    return ref
+        .read(sendSeuilsProvider.notifier)
+        .sendSeuils(
+          baseUrl: esp32Url,
+          tempMin: _metadataDouble(device, 'tempMin', 18.0),
+          tempMax: _metadataDouble(device, 'tempMax', 30.0),
+          humidityMin: _metadataDouble(device, 'humidityMin', 40.0),
+          humidityMax: _metadataDouble(device, 'humidityMax', 80.0),
+        );
+  }
+
+  double _metadataDouble(dynamic device, String key, double fallback) {
+    final value = device.metadata[key];
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value.replaceAll(',', '.')) ?? fallback;
+    }
+    return fallback;
+  }
+
+  Future<void> _toggleMode(
+    String esp32Url,
+    String currentMode,
+    dynamic device,
+  ) async {
+    final normalizedCurrentMode = _normalizeMode(currentMode);
+    final newMode = normalizedCurrentMode == 'auto' ? 'manuel' : 'auto';
     try {
+      if (newMode == 'auto') {
+        await _sendSeuilsToEsp32(esp32Url, device);
+      }
+      final tempMin = _metadataDouble(device, 'tempMin', 18.0);
+      final tempMax = _metadataDouble(device, 'tempMax', 30.0);
+      final humidityMin = _metadataDouble(device, 'humidityMin', 40.0);
+      final humidityMax = _metadataDouble(device, 'humidityMax', 80.0);
       await ref
           .read(setModeProvider.notifier)
-          .setMode(baseUrl: esp32Url, mode: newMode);
-      await _fetchEsp32Data();
+          .setMode(
+            baseUrl: esp32Url,
+            mode: newMode,
+            tempMin: tempMin,
+            tempMax: tempMax,
+            humidityMin: humidityMin,
+            humidityMax: humidityMax,
+          );
+      final updatedData = await ref
+          .read(esp32Dht22ServiceProvider)
+          .fetchData(baseUrl: esp32Url);
+      final confirmedMode = _normalizeMode(updatedData.mode);
+      if (confirmedMode != newMode) {
+        throw Exception(
+          'Mode non applique par l\'ESP32. Mode actuel: $confirmedMode',
+        );
+      }
+      if (mounted) setState(() => _esp32Data = updatedData);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -115,10 +156,11 @@ class _DeviceDetailsScreenState extends ConsumerState<DeviceDetailsScreen> {
   }
 
   Future<void> _toggleLed(String esp32Url, int index, bool currentState) async {
+    final newState = !currentState;
     try {
       await ref
           .read(setLedProvider.notifier)
-          .setLed(baseUrl: esp32Url, index: index, state: !currentState);
+          .setLed(baseUrl: esp32Url, index: index, state: newState);
       await _fetchEsp32Data();
     } catch (e) {
       if (mounted) {
@@ -130,6 +172,29 @@ class _DeviceDetailsScreenState extends ConsumerState<DeviceDetailsScreen> {
         );
       }
     }
+  }
+
+  String _actuatorLabel(int index) {
+    switch (index) {
+      case 0:
+        return 'Chauffage';
+      case 1:
+        return 'Ventilation';
+      case 2:
+        return 'Deshumidification';
+      case 3:
+        return 'Systeme OK';
+      default:
+        return 'Actionneur';
+    }
+  }
+
+  String _normalizeMode(String mode) {
+    final value = mode.trim().toLowerCase();
+    if (value == 'manual' || value == 'manuelle' || value == 'manuel') {
+      return 'manuel';
+    }
+    return 'auto';
   }
 
   @override
@@ -214,7 +279,7 @@ class _DeviceDetailsScreenState extends ConsumerState<DeviceDetailsScreen> {
                   _ControlPanel(
                     data: _esp32Data,
                     esp32Url: esp32Url,
-                    onToggleMode: _toggleMode,
+                    onToggleMode: (url, mode) => _toggleMode(url, mode, device),
                     onSendSeuils: () => _sendSeuils(device),
                     onSync: () async {
                       try {
@@ -575,7 +640,7 @@ class _LedPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final leds = data?.leds ?? [false, false, false, false];
-    final isManuel = data?.mode == 'manuel';
+    final isManuel = _normalizeMode(data?.mode ?? 'auto') == 'manuel';
 
     final ledConfig = [
       {
@@ -722,6 +787,14 @@ class _LedPanel extends StatelessWidget {
       ),
     );
   }
+
+  String _normalizeMode(String mode) {
+    final value = mode.trim().toLowerCase();
+    if (value == 'manual' || value == 'manuelle' || value == 'manuel') {
+      return 'manuel';
+    }
+    return 'auto';
+  }
 }
 
 // ── Panneau de contrôle ──────────────────────────────────────
@@ -742,7 +815,7 @@ class _ControlPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isAuto = data?.mode == 'auto';
+    final isAuto = _normalizeMode(data?.mode ?? 'auto') == 'auto';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -816,5 +889,13 @@ class _ControlPanel extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _normalizeMode(String mode) {
+    final value = mode.trim().toLowerCase();
+    if (value == 'manual' || value == 'manuelle' || value == 'manuel') {
+      return 'manuel';
+    }
+    return 'auto';
   }
 }
