@@ -62,6 +62,72 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+  Future<bool> _deleteNotification(
+    QueryDocumentSnapshot<Map<String, dynamic>> doc,
+  ) async {
+    final collection = _notificationsCollection();
+    if (collection == null) return false;
+
+    final data = doc.data();
+    final type = data['type'] as String?;
+    final status = data['status'] as String?;
+    final sourceId = data['sourceId'] as String?;
+
+    try {
+      if (type == 'vaccination_reminder' &&
+          status == 'scheduled' &&
+          sourceId != null) {
+        await VaccinationNotificationService.instance.cancelPlanReminders(
+          sourceId,
+        );
+      }
+
+      await collection.doc(doc.id).delete();
+
+      if (!mounted) return false;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Notification supprimée')));
+      return true;
+    } catch (e) {
+      if (!mounted) return false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de la suppression: $e')),
+      );
+      return false;
+    }
+  }
+
+  Future<bool> _confirmDelete(
+    QueryDocumentSnapshot<Map<String, dynamic>> doc,
+  ) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirmer la suppression'),
+        content: const Text(
+          'Voulez-vous vraiment supprimer cette notification ? Cette action est irréversible.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      return _deleteNotification(doc);
+    }
+
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final collection = _notificationsCollection();
@@ -119,7 +185,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   itemCount: docs.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
-                    final data = docs[index].data();
+                    final doc = docs[index];
+                    final data = doc.data();
                     final title = data['title'] as String? ?? 'Notification';
                     final message = data['message'] as String? ?? '';
                     final status = data['status'] as String? ?? 'scheduled';
@@ -130,39 +197,67 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         ? '-'
                         : '${scheduledAt.day.toString().padLeft(2, '0')}/${scheduledAt.month.toString().padLeft(2, '0')}/${scheduledAt.year} ${scheduledAt.hour.toString().padLeft(2, '0')}:${scheduledAt.minute.toString().padLeft(2, '0')}';
 
-                    return Card(
-                      child: ListTile(
-                        leading: Icon(
-                          status == 'received'
-                              ? Icons.notifications_active_rounded
-                              : Icons.notifications_none_rounded,
-                          color: status == 'received'
-                              ? Colors.green
-                              : Colors.orange,
+                    return Dismissible(
+                      key: ValueKey(doc.id),
+                      direction: DismissDirection.endToStart,
+                      confirmDismiss: (_) => _confirmDelete(doc),
+                      background: Container(
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        title: Text(title),
-                        subtitle: Text('$message\n$dateText'),
-                        isThreeLine: true,
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
+                        child: const Icon(
+                          Icons.delete_outline_rounded,
+                          color: Colors.white,
+                        ),
+                      ),
+                      child: Card(
+                        child: ListTile(
+                          leading: Icon(
+                            status == 'received'
+                                ? Icons.notifications_active_rounded
+                                : Icons.notifications_none_rounded,
                             color: status == 'received'
-                                ? Colors.green.withValues(alpha: 0.12)
-                                : Colors.orange.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(999),
+                                ? Colors.green
+                                : Colors.orange,
                           ),
-                          child: Text(
-                            status == 'received' ? 'Reçue' : 'Planifiée',
-                            style: TextStyle(
-                              color: status == 'received'
-                                  ? Colors.green
-                                  : Colors.orange,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
-                            ),
+                          title: Text(title),
+                          subtitle: Text('$message\n$dateText'),
+                          isThreeLine: true,
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: status == 'received'
+                                      ? Colors.green.withValues(alpha: 0.12)
+                                      : Colors.orange.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  status == 'received' ? 'Reçue' : 'Planifiée',
+                                  style: TextStyle(
+                                    color: status == 'received'
+                                        ? Colors.green
+                                        : Colors.orange,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                tooltip: 'Supprimer la notification',
+                                onPressed: () => _confirmDelete(doc),
+                                icon: const Icon(Icons.delete_outline_rounded),
+                              ),
+                            ],
                           ),
                         ),
                       ),

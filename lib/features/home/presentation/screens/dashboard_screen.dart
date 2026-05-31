@@ -92,8 +92,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               const SizedBox(height: 18),
               _SectionHeading(
-                title: 'Etat des batiments',
-                actionLabel: 'Temps reel',
+                title: 'Environnement',
+                actionLabel: 'Détails',
                 theme: theme,
               ),
               const SizedBox(height: 10),
@@ -246,13 +246,82 @@ class _QuickActions extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _ActionButton(
-            theme: theme,
-            icon: Icons.notifications_outlined,
-            label: 'Notifications',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-            ),
+          child: Builder(
+            builder: (context) {
+              final uid = FirebaseAuth.instance.currentUser?.uid;
+              final collection = uid == null
+                  ? null
+                  : FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(uid)
+                        .collection('notifications');
+
+              final unreadStream = collection == null
+                  ? const Stream<int>.empty()
+                  : collection
+                        .where('isRead', isEqualTo: false)
+                        .snapshots()
+                        .map((s) => s.docs.length);
+
+              return StreamBuilder<int>(
+                stream: unreadStream,
+                initialData: 0,
+                builder: (context, snapshot) {
+                  final count = snapshot.data ?? 0;
+
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: _ActionButton(
+                          theme: theme,
+                          icon: Icons.notifications_outlined,
+                          label: 'Notifications',
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const NotificationsScreen(),
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (count > 0)
+                        Positioned(
+                          top: -6,
+                          right: -6,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.15),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                            constraints: const BoxConstraints(minWidth: 20),
+                            child: Center(
+                              child: Text(
+                                count > 99 ? '99+' : count.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              );
+            },
           ),
         ),
         const SizedBox(width: 10),

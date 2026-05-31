@@ -158,25 +158,53 @@ class VaccinationNotificationService {
       _scheduledTimers[planId] = Timer(delayDuration, () async {
         developer.log('Timer fired for plan $planId, showing notification');
         await _localNotifications.show(notificationId, title, body, details);
+        // Après affichage, enregistrer la notification comme reçue dans Firestore
+        try {
+          final nowTs = Timestamp.fromDate(DateTime.now());
+          await _notifications().doc(_docIdForPlan(planId)).set({
+            'type': 'vaccination_reminder',
+            'sourceId': planId,
+            'title': title,
+            'message': body,
+            'scheduledAt': Timestamp.fromDate(plannedDate),
+            'notificationId': notificationId,
+            'isRead': false,
+            'readAt': null,
+            'status': 'received',
+            'receivedAt': nowTs,
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+        } catch (e) {
+          developer.log('Error saving received notification for $planId: $e');
+        }
+
         _scheduledTimers.remove(planId);
       });
     }
-
-    // Enregistrer dans Firestore
-    await _notifications().doc(_docIdForPlan(planId)).set({
-      'type': 'vaccination_reminder',
-      'sourceId': planId,
-      'title': title,
-      'message': body,
-      'scheduledAt': Timestamp.fromDate(plannedDate),
-      'notificationId': notificationId,
-      'isRead': false,
-      'readAt': null,
-      'status': isDue ? 'received' : 'scheduled',
-      'receivedAt': isDue ? Timestamp.fromDate(now) : null,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    // Si c'est déjà dû, enregistrer immédiatement comme reçue
+    if (isDue) {
+      try {
+        await _notifications().doc(_docIdForPlan(planId)).set({
+          'type': 'vaccination_reminder',
+          'sourceId': planId,
+          'title': title,
+          'message': body,
+          'scheduledAt': Timestamp.fromDate(plannedDate),
+          'notificationId': notificationId,
+          'isRead': false,
+          'readAt': null,
+          'status': 'received',
+          'receivedAt': Timestamp.fromDate(now),
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } catch (e) {
+        developer.log(
+          'Error saving immediate received notification for $planId: $e',
+        );
+      }
+    }
   }
 
   Future<void> cancelPlanReminders(String planId) async {
@@ -190,10 +218,20 @@ class VaccinationNotificationService {
     _scheduledTimers[planId]?.cancel();
     _scheduledTimers.remove(planId);
 
-    await _notifications().doc(_docIdForPlan(planId)).set({
-      'status': 'cancelled',
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    // Mettre à jour le document Firestore seulement s'il existe (évite de créer
+    // un document 'cancelled' pour les rappels non encore persistés)
+    try {
+      final docRef = _notifications().doc(_docIdForPlan(planId));
+      final snap = await docRef.get();
+      if (snap.exists) {
+        await docRef.set({
+          'status': 'cancelled',
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+    } catch (e) {
+      developer.log('Error updating cancelled status for $planId: $e');
+    }
   }
 
   Future<void> processDueReminders() async {
