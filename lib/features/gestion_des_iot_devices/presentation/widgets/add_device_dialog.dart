@@ -118,7 +118,7 @@ class _AddDeviceDialogState extends ConsumerState<AddDeviceDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Ajouter un capteur IoT',
+                'Ajouter un objet IoT',
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -127,8 +127,8 @@ class _AddDeviceDialogState extends ConsumerState<AddDeviceDialog> {
               TextField(
                 controller: _nameController,
                 decoration: InputDecoration(
-                  labelText: 'Nom du capteur',
-                  hintText: 'Ex: Capteur Bâtiment A',
+                  labelText: 'Nom de l\'objet',
+                  hintText: 'Ex: Objet Bâtiment A',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -139,7 +139,7 @@ class _AddDeviceDialogState extends ConsumerState<AddDeviceDialog> {
               TextField(
                 controller: _deviceIdController,
                 decoration: InputDecoration(
-                  labelText: 'ID du capteur',
+                  labelText: 'ID de l\'objet',
                   hintText: 'Identifiant unique',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
