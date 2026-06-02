@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/entities/index.dart';
 
 class DeviceCard extends StatelessWidget {
@@ -109,11 +111,47 @@ class DeviceCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Expanded(
-                    child: Text(
-                      'Bâtiment: ${device.buildingId}',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    child: Builder(
+                      builder: (context) {
+                        final uid = FirebaseAuth.instance.currentUser?.uid;
+                        if (uid == null) {
+                          return Text(
+                            'Bâtiment: ${device.buildingId}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        }
+
+                        return StreamBuilder<
+                          DocumentSnapshot<Map<String, dynamic>>
+                        >(
+                          stream: FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(uid)
+                              .collection('buildings')
+                              .doc(device.buildingId)
+                              .snapshots(),
+                          builder: (context, snap) {
+                            final name = (snap.hasData && snap.data!.exists)
+                                ? (snap.data!.data()?['name'] ??
+                                      device.buildingId)
+                                : device.buildingId;
+                            return Text(
+                              'Bâtiment: $name',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            );
+                          },
+                        );
+                      },
                     ),
                   ),
                 ],
