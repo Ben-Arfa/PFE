@@ -16,7 +16,14 @@ service cloud.firestore {
     }
 
     function userProfileCreateIsValid() {
-      return request.resource.data.keys().hasOnly([
+      return request.resource.data.keys().hasAll([
+          'firstName',
+          'lastName',
+          'email',
+          'role',
+          'createdAt'
+        ]) &&
+        request.resource.data.keys().hasOnly([
           'firstName',
           'lastName',
           'email',
@@ -25,7 +32,11 @@ service cloud.firestore {
           'createdBy'
         ]) &&
         request.resource.data.email is string &&
-        request.resource.data.role == 'user';
+        request.resource.data.role == 'user' &&
+        (
+          !('createdBy' in request.resource.data) ||
+          request.resource.data.createdBy == request.auth.uid
+        );
     }
 
     function userProfileUpdateIsValidForOwner() {
