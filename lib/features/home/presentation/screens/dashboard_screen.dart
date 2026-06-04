@@ -778,10 +778,10 @@ class _RiskPanel extends StatelessWidget {
                 height: 120,
                 width: double.infinity,
                 child: CustomPaint(
-                  painter: _BarChartPainter(
+                  painter: _DashboardLineChartPainter(
                     values: values,
                     color: const Color(0xFFAB1717),
-                    mutedColor: theme.borderColor,
+                    gridColor: theme.borderColor,
                   ),
                 ),
               ),
@@ -974,9 +974,10 @@ class _RightSummaryPanel extends StatelessWidget {
                 height: 72,
                 width: double.infinity,
                 child: CustomPaint(
-                  painter: _SparklinePainter(
+                  painter: _DashboardLineChartPainter(
                     values: const [2, 4, 6, 3, 7, 5, 6],
                     color: theme.mutedColor,
+                    gridColor: theme.borderColor,
                   ),
                 ),
               ),
@@ -1456,84 +1457,116 @@ class _CompactStat extends StatelessWidget {
   }
 }
 
-class _SparklinePainter extends CustomPainter {
+class _DashboardLineChartPainter extends CustomPainter {
   final List<double> values;
   final Color color;
+  final Color gridColor;
 
-  const _SparklinePainter({required this.values, required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (values.isEmpty) return;
-    final paint = Paint()
-      ..color = color.withOpacity(0.9)
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-    final path = Path();
-    final maxValue = values.reduce(math.max);
-    for (var i = 0; i < values.length; i++) {
-      final x = i * (size.width / (values.length - 1));
-      final y =
-          size.height -
-          (values[i] / (maxValue == 0 ? 1 : maxValue)) * size.height;
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _SparklinePainter oldDelegate) {
-    return oldDelegate.values != values || oldDelegate.color != color;
-  }
-}
-
-class _BarChartPainter extends CustomPainter {
-  final List<double> values;
-  final Color color;
-  final Color mutedColor;
-
-  const _BarChartPainter({
+  const _DashboardLineChartPainter({
     required this.values,
     required this.color,
-    required this.mutedColor,
+    required this.gridColor,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (values.isEmpty) return;
+    final cleanedValues = values.where((value) => value.isFinite).toList();
+    if (cleanedValues.isEmpty) return;
+
     final gridPaint = Paint()
-      ..color = mutedColor
+      ..color = gridColor.withOpacity(0.55)
       ..strokeWidth = 1;
     for (var i = 0; i < 4; i++) {
       final y = size.height * i / 3;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
 
-    final maxValue = math.max(values.reduce(math.max), 1);
-    final gap = 10.0;
-    final barWidth = (size.width - gap * (values.length - 1)) / values.length;
-    final paint = Paint()..color = color;
+    if (cleanedValues.length == 1) {
+      _drawSinglePoint(canvas, size);
+      return;
+    }
 
-    for (var i = 0; i < values.length; i++) {
-      final height = (values[i] / maxValue).clamp(0.0, 1.0) * size.height;
-      final left = i * (barWidth + gap);
-      final rect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(left, size.height - height, barWidth, height),
-        const Radius.circular(5),
-      );
-      canvas.drawRRect(rect, paint);
+    final minValue = cleanedValues.reduce(math.min);
+    final maxValue = cleanedValues.reduce(math.max);
+    final span = maxValue == minValue ? 1.0 : maxValue - minValue;
+    final points = <Offset>[];
+
+    for (var i = 0; i < cleanedValues.length; i++) {
+      final x = size.width * i / (cleanedValues.length - 1);
+      final normalized = (cleanedValues[i] - minValue) / span;
+      final y = size.height - normalized * size.height;
+      points.add(Offset(x, y));
+    }
+
+    final fillPath = Path()
+      ..moveTo(points.first.dx, size.height)
+      ..lineTo(points.first.dx, points.first.dy);
+    final linePath = Path()..moveTo(points.first.dx, points.first.dy);
+
+    for (var i = 1; i < points.length; i++) {
+      linePath.lineTo(points[i].dx, points[i].dy);
+      fillPath.lineTo(points[i].dx, points[i].dy);
+    }
+
+    fillPath
+      ..lineTo(points.last.dx, size.height)
+      ..close();
+
+    final fillPaint = Paint()
+      ..color = color.withOpacity(0.12)
+      ..style = PaintingStyle.fill;
+    final linePaint = Paint()
+      ..color = color.withOpacity(0.95)
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final pointPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    final pointBorderPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    canvas.drawPath(fillPath, fillPaint);
+    canvas.drawPath(linePath, linePaint);
+
+    final pointStep = math.max(1, (points.length / 7).ceil());
+    for (var i = 0; i < points.length; i++) {
+      if (i == 0 || i == points.length - 1 || i % pointStep == 0) {
+        canvas.drawCircle(points[i], 4.2, pointBorderPaint);
+        canvas.drawCircle(points[i], 2.8, pointPaint);
+      }
     }
   }
 
+  void _drawSinglePoint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final linePaint = Paint()
+      ..color = color.withOpacity(0.28)
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+    final pointBorderPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    final pointPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    canvas.drawLine(
+      Offset(0, center.dy),
+      Offset(size.width, center.dy),
+      linePaint,
+    );
+    canvas.drawCircle(center, 5, pointBorderPaint);
+    canvas.drawCircle(center, 3.2, pointPaint);
+  }
+
   @override
-  bool shouldRepaint(covariant _BarChartPainter oldDelegate) {
+  bool shouldRepaint(covariant _DashboardLineChartPainter oldDelegate) {
     return oldDelegate.values != values ||
         oldDelegate.color != color ||
-        oldDelegate.mutedColor != mutedColor;
+        oldDelegate.gridColor != gridColor;
   }
 }
 
